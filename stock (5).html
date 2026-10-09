@@ -1,0 +1,2847 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REVOBA — Commandes de consommables</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg: #F3F5F5;
+    --surface: #FFFFFF;
+    --ink: #313236;
+    --ink-soft: #767B7E;
+    --line: #E2E6E7;
+    --accent: #259188;
+    --accent-dark: #1C726B;
+    --accent-soft: #DDEFEC;
+    --slat-dark: #3A3B3D;
+    --demande: #6E7B85;
+    --demande-soft: #E9EDEE;
+    --commande: #C08A34;
+    --commande-soft: #F3E7CE;
+    --attente: #C1622A;
+    --attente-soft: #F3E0D0;
+    --livre: #259188;
+    --livre-soft: #DDEFEC;
+    --radius: 10px;
+    --shadow-soft: 0 2px 8px rgba(49,50,54,0.08);
+    --shadow-lift: 0 6px 16px rgba(49,50,54,0.16);
+  }
+
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    line-height:1.45;
+  }
+  h1,h2,h3{ font-family:'Poppins', sans-serif; margin:0; }
+
+  .app{ max-width: 780px; margin: 0 auto; padding: 0 16px 64px; }
+
+  /* --- Header: wood plank with sawn edge --- */
+  .header-outer{
+    position: sticky; top:0; z-index:6;
+  }
+  .header-wood{
+    position:relative; overflow:hidden;
+    background: var(--surface);
+    background-image: repeating-linear-gradient(180deg, rgba(58,59,61,0.05) 0px, rgba(58,59,61,0.05) 5px, transparent 5px, transparent 11px);
+    background-position: right -10px top 0;
+    background-size: 140px 100%;
+    background-repeat: no-repeat;
+    border-bottom: 3px solid var(--accent);
+    padding: 20px 16px 20px;
+  }
+  .brand-logo{ height:34px; display:block; }
+  .header-inner{
+    max-width: 780px; margin:0 auto;
+    display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-icon{ flex:none; }
+  .brand-text{ display:flex; flex-direction:column; }
+  .brand-sub{ font-size:12.5px; color: var(--ink-soft); margin-top:3px; }
+
+  .user-select{ position:relative; z-index:1; }
+  .user-select label{ display:block; font-size:11.5px; color: var(--ink-soft); margin-bottom:3px; font-weight:600; }
+  select{
+    font-family:'Inter',sans-serif; font-size:14px; padding:7px 10px;
+    border-radius: var(--radius); border:1px solid var(--accent); background:#FFFFFF; color:var(--ink);
+    max-width: 220px;
+  }
+  select.attention{ border-color: var(--attente); box-shadow: 0 0 0 2px var(--attente-soft); }
+  .eta-form input.attention{ border-color: var(--attente); box-shadow: 0 0 0 2px var(--attente-soft); }
+
+  main{ padding-top:22px; }
+
+  .btn-primary{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
+    background: var(--accent); color:#fff; border:none; border-radius: var(--radius);
+    padding:11px 16px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; justify-content:center;
+    box-shadow: var(--shadow-soft); transition: background .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  .btn-primary:hover{ background: var(--accent-dark); transform: translateY(-1px); box-shadow: var(--shadow-lift); }
+  .btn-primary:active{ transform: translateY(0); }
+  .btn-block{ width:100%; font-size:15px; padding:13px 16px; }
+
+  .action-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px; }
+  .btn-action{
+    display:flex; align-items:center; gap:10px; text-align:left;
+    border:none; border-radius: var(--radius); padding:13px 14px; cursor:pointer;
+    color:#fff; box-shadow: var(--shadow-soft);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn-action:hover{ transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+  .btn-action:active{ transform: translateY(0); }
+  .btn-action-request{ background: linear-gradient(135deg, var(--accent), var(--accent-dark)); }
+  .btn-action-delivery{ background: linear-gradient(135deg, var(--livre), #55684A); }
+  .btn-search-full{
+    width:100%; margin-top:10px; display:flex; align-items:center; justify-content:center; gap:8px;
+    background: var(--surface); color: var(--accent-dark); border:1.5px solid var(--accent);
+    border-radius: var(--radius); padding:11px 14px; font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
+    cursor:pointer; box-shadow: var(--shadow-soft); transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn-search-full:hover{ background: var(--accent-soft); transform: translateY(-1px); box-shadow: var(--shadow-lift); }
+
+  .feature-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
+  .btn-feature{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+    padding:12px 8px; border-radius: var(--radius); border:none; cursor:pointer;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:12.5px; text-align:center;
+    box-shadow: var(--shadow-soft); transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn-feature:hover{ transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+  .btn-feature-stock{ background: var(--commande-soft); color: var(--commande-dark, #8A6224); }
+  .btn-feature-orders{ background: var(--accent-soft); color: var(--accent-dark); }
+  .btn-feature-needs{ background: var(--attente-soft); color: #954620; }
+  @media (max-width:420px){
+    .feature-row{ grid-template-columns:1fr; }
+  }
+  .action-icon{
+    flex:none; width:34px; height:34px; border-radius:9px; background:rgba(255,255,255,0.2);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .action-text{ display:flex; flex-direction:column; line-height:1.25; min-width:0; }
+  .action-text strong{ font-size:14px; font-weight:600; }
+  .action-text small{ font-size:11px; font-weight:400; opacity:.88; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  @media (max-width:420px){
+    .action-row{ grid-template-columns:1fr; }
+  }
+  .btn-ghost{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
+    background:transparent; color:var(--ink-soft); border:1px solid var(--line); border-radius: var(--radius);
+    padding:10px 16px; cursor:pointer;
+  }
+  .btn-small{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:13px;
+    border:none; border-radius:8px; padding:8px 13px; cursor:pointer; color:#fff;
+    display:inline-flex; align-items:center; gap:6px;
+    transition: filter .15s ease, transform .15s ease;
+  }
+  .btn-small:hover{ filter:brightness(1.08); transform: translateY(-1px); }
+  .link-btn{
+    background:none; border:none; color:var(--accent); font-family:'Inter',sans-serif;
+    font-weight:600; font-size:13px; cursor:pointer; padding:6px 0;
+  }
+
+  .panel{
+    background: var(--surface); border:1px solid var(--line); border-radius: var(--radius);
+    padding:18px; margin:14px 0; box-shadow: var(--shadow-soft);
+  }
+  .panel h2{ font-size:17px; margin-bottom:12px; }
+  .panel{ scroll-margin-top:110px; }
+  .panel label{ display:block; font-size:13px; color:var(--ink-soft); margin-bottom:12px; }
+  .panel input[type="text"], .panel input[type="date"], .panel select, .panel textarea{
+    display:block; width:100%; margin-top:5px; font-family:'Inter',sans-serif; font-size:14px;
+    padding:9px 10px; border-radius:7px; border:1px solid var(--line); background:#FFFDF8; color:var(--ink);
+  }
+  .panel select.attention{ border-color: var(--attente); box-shadow: 0 0 0 2px var(--attente-soft); }
+  .panel input:focus, .panel textarea:focus, select:focus{
+    outline:none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+  .panel textarea{ min-height:60px; resize:vertical; }
+  .form-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+  .hidden{ display:none !important; }
+
+  .stats-bar{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:16px 0 4px; }
+  .stat-card{
+    border:none; border-radius: var(--radius); padding:12px 6px; text-align:center; cursor:pointer;
+    box-shadow: var(--shadow-soft); transition: transform .15s ease, box-shadow .15s ease, outline-color .15s ease;
+    display:flex; flex-direction:column; gap:2px;
+    outline:2px solid transparent; outline-offset:-2px;
+  }
+  .stat-card:hover{ transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+  .stat-card.stat-active{ outline-color: currentColor; }
+  .stat-count{ font-family:'Playfair Display', serif; font-size:26px; font-weight:700; line-height:1; }
+  .stat-label{ font-size:10.5px; font-weight:600; line-height:1.2; }
+  .stat-demande{ background: var(--demande-soft); color: var(--demande); }
+  .stat-commande{ background: var(--commande-soft); color: var(--commande); }
+  .stat-attente{ background: var(--attente-soft); color: var(--attente); }
+  .stat-livre{ background: var(--livre-soft); color: var(--livre); }
+  @media (max-width:400px){
+    .stat-label{ font-size:9.5px; }
+    .stat-count{ font-size:20px; }
+  }
+
+  .search{
+    width:100%; margin:10px 0 4px; font-family:'Inter',sans-serif; font-size:14px;
+    padding:9px 12px; border-radius: var(--radius); border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  }
+
+  .cards{ display:flex; flex-direction:column; gap:12px; margin-top:16px; }
+
+  .card{
+    background: var(--surface); border:1px solid var(--line); border-radius: var(--radius);
+    border-left: 4px solid var(--ink-soft);
+    padding:16px 18px; display:flex; flex-direction:column; gap:8px;
+    box-shadow: var(--shadow-soft);
+    transition: box-shadow .15s ease, transform .15s ease;
+  }
+  .card:hover{ box-shadow: var(--shadow-lift); transform: translateY(-1px); }
+  .card.status-demande{ border-left-color: var(--demande); }
+  .card.status-commande{ border-left-color: var(--commande); }
+  .card.status-attente{ border-left-color: var(--attente); }
+  .card.status-livre{ border-left-color: var(--livre); }
+
+  .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .card-title{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .status-icon-badge{
+    flex:none; width:30px; height:30px; border-radius:50%; background: var(--bg);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .status-demande .status-icon-badge{ color: var(--demande); }
+  .status-commande .status-icon-badge{ color: var(--commande); }
+  .status-attente .status-icon-badge{ color: var(--attente); }
+  .status-livre .status-icon-badge{ color: var(--livre); }
+  .card h3{ font-size:17px; font-weight:600; font-family:'Inter',sans-serif; letter-spacing:-0.01em; }
+  .status-label{
+    font-size:11px; font-weight:600; padding:4px 11px; border-radius:999px; white-space:nowrap;
+    background: var(--bg);
+  }
+  .status-demande .status-label{ color:var(--demande); }
+  .status-commande .status-label{ color:var(--commande); }
+  .status-attente .status-label{ color:var(--attente); }
+  .status-livre .status-label{ color:var(--livre); }
+
+  .qty{ font-size:13px; color:var(--ink-soft); margin:0; }
+  .comment{ font-size:13px; color:var(--ink); margin:0; font-style:italic; }
+  .meta{ font-size:12.5px; color:var(--ink-soft); margin:0; }
+  .meta.eta{ color:var(--attente); font-weight:600; }
+
+  .card-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .btn-commande{ background:var(--commande); }
+  .btn-attente{ background:var(--attente); }
+  .btn-livre{ background:var(--livre); }
+
+  .eta-form{ display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap; }
+  .eta-form input{ font-family:'Inter',sans-serif; padding:7px 9px; border-radius:7px; border:1px solid var(--line); }
+
+  .empty{ text-align:center; padding:40px 16px; color:var(--ink-soft); }
+  .empty p{ margin:4px 0; }
+  .empty p:first-child{ font-weight:600; color:var(--ink); font-size:15px; }
+
+  #teamList{ list-style:none; margin:0 0 12px; padding:0; display:flex; flex-direction:column; gap:6px; }
+
+  .stock-domain-tabs{ display:flex; gap:6px; margin-top:4px; flex-wrap:wrap; }
+  .stock-domain-tab{
+    flex:1; min-width:100px; padding:8px 6px; border-radius:8px; border:1px solid var(--line); background:#fff;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:12px; color: var(--ink-soft); cursor:pointer; text-align:center;
+  }
+  .stock-domain-tab.active{ background: var(--accent); border-color: var(--accent); color:#fff; }
+
+  .stock-category{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color: var(--accent-dark); margin:14px 0 6px; }
+  .stock-category:first-child{ margin-top:0; }
+  .stock-row{ display:flex; flex-direction:column; align-items:stretch; gap:6px; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .stock-row-controls{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .stock-seuil-label{ display:flex; align-items:center; gap:5px; font-size:11.5px; color: var(--ink-soft); margin-left:auto; }
+  .stock-seuil-input{ width:46px; padding:4px 2px; text-align:center; border-radius:6px; border:1px solid var(--line); font-family:'Inter',sans-serif; font-size:12.5px; }
+  .stock-row-name{ flex:1; }
+  .stock-row-input{
+    font-weight:700; width:52px; text-align:center; padding:4px 2px; border-radius:6px;
+    border:1px solid var(--line); font-family:'Inter',sans-serif; font-size:13.5px; color: var(--ink);
+  }
+  .stock-row-input.low{ color: var(--attente); border-color: var(--attente); }
+  .stock-row-input:focus{ outline:none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .stock-btn{ width:26px; height:26px; border-radius:6px; border:1px solid var(--line); background:#fff; cursor:pointer; font-size:14px; line-height:1; color: var(--ink); }
+  .stock-btn:hover{ background: var(--accent-soft); border-color: var(--accent); }
+
+  .order-card{ border:1px solid var(--line); border-radius: var(--radius); padding:12px 14px; margin-bottom:10px; }
+  .order-card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .order-status-pill{ font-size:11px; font-weight:600; padding:4px 10px; border-radius:999px; white-space:nowrap; }
+  .order-status-pill.enregistree{ background: var(--attente-soft); color: var(--attente); }
+  .order-status-pill.fabriquee{ background: var(--livre-soft); color: var(--livre); }
+  .order-week-badge{ display:inline-block; background: var(--accent); color:#fff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; margin-right:2px; }
+  .order-items-summary{ font-size:12.5px; color: var(--ink-soft); margin-top:4px; }
+
+  .order-items-editor-row{ display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13.5px; }
+  .order-items-editor-row label{ flex:1; margin:0; font-size:13.5px; color: var(--ink); }
+  .order-items-editor-row input{ width:64px; padding:6px 8px; border-radius:6px; border:1px solid var(--line); text-align:center; }
+
+  .migration-banner{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    background: var(--commande-soft); border:1px solid var(--commande); border-radius:8px; padding:10px 12px; margin:0 0 12px; font-size:13px; }
+  .migration-banner strong{ color:#8A6224; }
+  .migration-section{ margin-top:14px; }
+  .migration-section h3{ font-family:'Inter',sans-serif; font-size:14px; margin:0 0 4px; }
+  .migration-section .hint{ font-size:12px; color:var(--ink-soft); margin:0 0 8px; }
+  .migration-row{ display:grid; grid-template-columns: 1.3fr 0.8fr 1.4fr; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .migration-row select{ width:100%; margin:0; padding:6px 8px; font-size:13px; }
+  .migration-row .stock-vals{ font-size:12px; color:var(--ink-soft); }
+  .migration-row .stock-vals b{ color:var(--attente); }
+  .migration-new{ font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
+  @media (max-width:520px){ .migration-row{ grid-template-columns:1fr; } }
+  .import-warnings{ background: var(--attente-soft); color:#954620; border-radius:8px; padding:10px 12px; font-size:12.5px; margin:0 0 12px; }
+  .import-warnings ul{ margin:4px 0 0; padding-left:18px; }
+  .archived-row .stock-row-name{ color: var(--ink-soft); text-decoration: line-through; }
+
+  .needs-row{ display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; align-items:center; }
+  .needs-row.header{ font-weight:700; font-size:11.5px; text-transform:uppercase; color: var(--ink-soft); }
+  .needs-row .shortfall{ color: var(--attente); font-weight:700; }
+  .needs-row.no-need span:nth-child(2){ color: var(--ink-soft); }
+  .needs-row .missing-tag{ display:inline-block; margin-left:6px; font-size:11px; font-weight:600; color: var(--attente); }
+  .needs-toolbar{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .needs-toolbar input, .needs-toolbar select{ margin:0; padding:8px 10px; border-radius:7px; border:1px solid var(--line); font-size:13px; }
+  .needs-toolbar input{ flex:1 1 200px; min-width:0; }
+  .needs-summary{ font-size:12.5px; color:var(--ink-soft); margin-top:8px; }
+  .needs-summary b{ color: var(--attente); }
+  #teamList li{ display:flex; justify-content:space-between; align-items:center; font-size:14px; padding:6px 0; border-bottom:1px solid var(--line); }
+  #teamList button{ background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:13px; }
+  #teamList button:hover{ color:var(--attente); }
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background: var(--slat-dark); color:#F5F6F6; padding:10px 18px; border-radius:999px;
+    font-size:13px; opacity:0; pointer-events:none; transition:opacity .25s ease;
+    z-index:20;
+  }
+  .toast.show{ opacity:1; }
+
+  .loading{ text-align:center; padding:40px; color:var(--ink-soft); font-size:14px; }
+
+  footer{ margin-top:28px; padding-top:16px; border-top:1px solid var(--line); }
+</style>
+</head>
+<body>
+<div class="header-outer">
+  <div class="header-wood">
+    <div class="header-inner">
+      <div class="brand">
+        <img class="brand-logo" src="data:image/png;base64,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" alt="REVOBA">
+        <div class="brand-text">
+          <span class="brand-sub">Suivi des commandes de consommables</span>
+        </div>
+      </div>
+      <div class="user-select">
+        <label for="userSelect">Vous êtes</label>
+        <select id="userSelect">
+          <option value="">Sélectionner mon nom</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <main>
+    <div id="loadingState" class="loading">Chargement…</div>
+
+    <div id="content" class="hidden">
+      <div class="action-row">
+        <button id="newRequestBtn" class="btn-action btn-action-request">
+          <span class="action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+          <span class="action-text"><strong>Nouveau besoin</strong><small>Signaler un manque</small></span>
+        </button>
+        <button id="newDeliveryBtn" class="btn-action btn-action-delivery">
+          <span class="action-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 8l9-5 9 5-9 5-9-5z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M3 8v8l9 5 9-5V8" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>
+          <span class="action-text"><strong>Livraison reçue</strong><small>Sans passer par une demande</small></span>
+        </button>
+      </div>
+
+      <button id="toggleSearchBtnTop" class="btn-search-full">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Rechercher par chantier ou fournisseur
+      </button>
+
+      <div id="searchPanel" class="panel hidden">
+        <h2>Recherche</h2>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:-4px 0 12px;">Retrouvez toutes les demandes et livraisons liées à un chantier ou à un fournisseur.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+          <select id="searchSiteInput" style="flex:1; min-width:150px; padding:9px 10px; border-radius:7px; border:1px solid var(--line); font-family:'Inter',sans-serif; font-size:14px;">
+            <option value="">Tous les chantiers</option>
+          </select>
+          <input id="searchSupplierInput" type="text" placeholder="Fournisseur (ex. Würth)" style="flex:1; min-width:150px; padding:9px 10px; border-radius:7px; border:1px solid var(--line); font-family:'Inter',sans-serif; font-size:14px;">
+        </div>
+        <button id="exportCsvBtn" class="btn-ghost" style="margin-bottom:12px;">Exporter les résultats en CSV</button>
+        <div id="searchResults"></div>
+      </div>
+
+      <div id="newDeliveryForm" class="panel hidden">
+        <h2>Livraison reçue</h2>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:-4px 0 12px;">Pour une commande passée sans passer par l'application.</p>
+        <label>Consommable
+          <input id="deliveryItemInput" type="text" placeholder="Ex. Profilé lame résine coloris 202">
+        </label>
+        <label>Chantier
+          <select id="deliverySiteInput">
+            <option value="">Sélectionner un chantier</option>
+          </select>
+        </label>
+        <label>Quantité (optionnel)
+          <input id="deliveryQtyInput" type="text" placeholder="Ex. 2 boîtes">
+        </label>
+        <label>Fournisseur (optionnel)
+          <input id="deliveryDirectSupplierInput" type="text" placeholder="Ex. Würth, Point.P…">
+        </label>
+        <label>Référence produit (optionnel)
+          <input id="deliveryDirectReferenceInput" type="text" placeholder="Ex. réf. fabricant ou code EAN">
+        </label>
+        <label>Commentaire (optionnel)
+          <textarea id="deliveryDirectCommentInput" placeholder="Ex. donné à Cécile, déposé en atelier découpe"></textarea>
+        </label>
+        <div class="form-actions">
+          <button id="cancelDeliveryFormBtn" class="btn-ghost">Annuler</button>
+          <button id="submitDeliveryBtn" class="btn-primary">Enregistrer la livraison</button>
+        </div>
+      </div>
+
+      <div class="feature-row">
+        <button id="toggleStockBtn" class="btn-feature btn-feature-stock">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 8l9-5 9 5-9 5-9-5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M3 8v8l9 5 9-5V8" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          Gérer le stock
+        </button>
+        <button id="toggleOrdersBtn" class="btn-feature btn-feature-orders">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Commandes clients
+        </button>
+        <button id="toggleNeedsBtn" class="btn-feature btn-feature-needs">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Besoins vs stock
+        </button>
+      </div>
+
+      <div style="margin-top:8px;">
+        <button id="toggleManageBtn" class="link-btn">Gérer équipe et chantiers</button>
+      </div>
+
+      <div id="stockPanel" class="panel hidden">
+        <h2>Stock des références</h2>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:-4px 0 12px;">Stock actuel par référence. Utilisez les boutons +/- pour enregistrer une entrée ou une sortie manuelle.</p>
+        <div id="migrationBanner" class="migration-banner hidden"></div>
+        <div class="stock-domain-tabs">
+          <button class="stock-domain-tab active" data-domain="quinc_noir">Quincaillerie noire</button>
+          <button class="stock-domain-tab" data-domain="quinc_blanc">Quincaillerie blanche</button>
+          <button class="stock-domain-tab" data-domain="lames">Stock de lames</button>
+        </div>
+        <input id="stockSearchInput" class="search" type="text" placeholder="Rechercher une référence…" style="margin:10px 0 4px;">
+        <div id="stockList"></div>
+        <button id="toggleArchivedBtn" class="link-btn" style="margin-top:6px;">Afficher les références archivées</button>
+        <div id="archivedList" class="hidden"></div>
+        <div class="form-actions" style="justify-content:flex-start; margin-top:14px; flex-wrap:wrap;">
+          <input id="newStockNameInput" type="text" placeholder="Nom de la référence" style="flex:1; min-width:160px; padding:9px 10px; border-radius:7px; border:1px solid var(--line);">
+          <select id="newStockCategoryInput" style="padding:9px 10px; border-radius:7px; border:1px solid var(--line);"></select>
+          <button id="addStockItemBtn" class="btn-primary">Ajouter une référence</button>
+        </div>
+        <p id="newStockHint" style="font-size:12px; color:var(--ink-soft); margin:6px 0 0;"></p>
+        <div>
+        </div>
+        <div id="tigeSettingsBox" style="margin-top:16px; padding-top:12px; border-top:1px solid var(--line);">
+          <h2 style="font-size:15px; margin-bottom:4px;">Débit des tiges d'espagnolette</h2>
+          <p style="font-size:12px; color:var(--ink-soft); margin:0 0 8px;">Utilisé à l'import d'un dossier pour convertir les longueurs de tige en nombre de tiges à sortir du stock.</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; font-size:12.5px; color:var(--ink-soft);">
+            <label style="margin:0;">Longueur d'une tige (mm)<input id="tigeLongueurInput" type="number" min="1" step="1" style="display:block; width:120px; margin-top:4px; padding:7px 8px; border-radius:7px; border:1px solid var(--line);"></label>
+            <label style="margin:0;">Chute non exploitable par tige (mm)<input id="tigeChuteInput" type="number" min="0" step="1" style="display:block; width:120px; margin-top:4px; padding:7px 8px; border-radius:7px; border:1px solid var(--line);"></label>
+            <label style="margin:0;">Trait de scie par coupe (mm)<input id="tigeTraitInput" type="number" min="0" step="0.5" style="display:block; width:120px; margin-top:4px; padding:7px 8px; border-radius:7px; border:1px solid var(--line);"></label>
+            <button id="saveTigeSettingsBtn" class="btn-ghost" style="padding:8px 14px;">Enregistrer</button>
+          </div>
+        </div>
+        <button id="cleanupUncoloredBtn" class="btn-ghost" style="margin-top:10px; color: var(--attente); border-color: var(--attente);">Nettoyer les anciennes références sans couleur</button>
+      </div>
+
+      <div id="migrationPanel" class="panel hidden">
+        <h2>Mettre à jour le catalogue avec la nouvelle fiche de contrôle</h2>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:-4px 0 4px;">Rien n'est supprimé : une référence renommée garde son stock et son seuil, une référence archivée garde son stock et peut être restaurée. Vérifiez chaque ligne, puis appliquez.</p>
+        <button id="exportStockCsvBtn" class="btn-ghost" style="margin:8px 0 4px;">Télécharger une sauvegarde du stock (CSV)</button>
+        <div id="migrationContent"></div>
+        <div class="form-actions" style="margin-top:14px;">
+          <button id="cancelMigrationBtn" class="btn-ghost">Fermer</button>
+          <button id="applyMigrationBtn" class="btn-primary">Appliquer la mise à jour</button>
+        </div>
+      </div>
+
+      <div id="ordersPanel" class="panel hidden">
+        <h2>Commandes clients</h2>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:-4px 0 12px;">Commandes importées depuis le dossier de fabrication unifié (ou saisies à la main), fabriquées ou non.</p>
+        <div class="form-actions" style="justify-content:flex-start; margin-bottom:14px;">
+          <button id="importFicheBtn" class="btn-primary">Importer un dossier de fabrication (.ods)</button>
+          <button id="manualOrderBtn" class="btn-ghost">Saisir une commande manuellement</button>
+          <input id="ficheFileInput" type="file" accept=".ods,.xlsx,.xls" style="display:none;">
+        </div>
+        <div id="ordersList"></div>
+      </div>
+
+      <div id="orderFormPanel" class="panel hidden">
+        <h2 id="orderFormTitle">Nouvelle commande client</h2>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:-4px 0 12px;">Vérifiez et corrigez les informations avant d'enregistrer.</p>
+        <label>Client
+          <input id="orderClientInput" type="text" placeholder="Nom du client">
+        </label>
+        <label>Référence
+          <input id="orderRefInput" type="text" placeholder="Référence de la commande">
+        </label>
+        <label>Semaine
+          <input id="orderSemaineInput" type="text" placeholder="Ex. S37">
+        </label>
+        <label>Couleur (lames)
+          <input id="orderCouleurInput" type="text" placeholder="Ex. 0101 Marron clair">
+        </label>
+        <label>Couleur quincaillerie
+          <select id="orderQuincaillerieCouleurInput">
+            <option value="">Non renseignée</option>
+            <option value="Blanc">Blanc</option>
+            <option value="Noir">Noir</option>
+            <option value="Laquée">Laquée couleur des lames (hors stock)</option>
+          </select>
+        </label>
+        <div id="orderImportWarnings" class="import-warnings hidden"></div>
+        <div id="orderItemsEditor"></div>
+        <div class="form-actions">
+          <button id="cancelOrderFormBtn" class="btn-ghost">Annuler</button>
+          <button id="submitOrderFormBtn" class="btn-primary">Enregistrer la commande</button>
+        </div>
+      </div>
+
+      <div id="needsPanel" class="panel hidden">
+        <h2>Besoins vs stock disponible</h2>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:-4px 0 12px;">Tout le stock, avec pour chaque référence le total nécessaire sur les commandes enregistrées mais non fabriquées (0 si aucune commande ne l'utilise).</p>
+        <div class="stock-domain-tabs">
+          <button class="needs-domain-tab stock-domain-tab active" data-ndomain="quinc_noir">Quincaillerie noire</button>
+          <button class="needs-domain-tab stock-domain-tab" data-ndomain="quinc_blanc">Quincaillerie blanche</button>
+          <button class="needs-domain-tab stock-domain-tab" data-ndomain="lames">Stock de lames</button>
+        </div>
+        <div class="needs-toolbar">
+          <input id="needsSearchInput" type="search" placeholder="Rechercher une référence…">
+          <select id="needsFilterSelect">
+            <option value="all">Tout le stock</option>
+            <option value="need">Avec un besoin</option>
+            <option value="alert">Sous le seuil</option>
+          </select>
+        </div>
+        <div id="needsSummary" class="needs-summary"></div>
+        <div id="needsList" style="margin-top:6px;"></div>
+      </div>
+
+      <div id="managePanel" class="panel hidden">
+        <h2>Équipe</h2>
+        <ul id="teamList"></ul>
+        <div class="form-actions" style="justify-content:flex-start;">
+          <input id="newNameInput" type="text" placeholder="Nom et prénom" style="flex:1; padding:9px 10px; border-radius:7px; border:1px solid var(--line);">
+          <button id="addNameBtn" class="btn-primary">Ajouter</button>
+        </div>
+
+        <h2 style="margin-top:20px;">Chantiers</h2>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:-4px 0 12px;">Utilisez les mêmes noms que dans l'application de saisie des heures, pour que les deux outils restent cohérents.</p>
+        <ul id="sitesList"></ul>
+        <div class="form-actions" style="justify-content:flex-start;">
+          <input id="newSiteInput" type="text" placeholder="Nom du chantier" style="flex:1; padding:9px 10px; border-radius:7px; border:1px solid var(--line);">
+          <button id="addSiteBtn" class="btn-primary">Ajouter</button>
+        </div>
+      </div>
+
+      <div id="newRequestForm" class="panel hidden">
+        <h2>Nouveau besoin</h2>
+        <label>Consommable
+          <input id="itemInput" type="text" placeholder="Ex. Profilé lame résine coloris 202">
+        </label>
+        <label>Quantité (optionnel)
+          <input id="qtyInput" type="text" placeholder="Ex. 2 boîtes">
+        </label>
+        <label>Chantier
+          <select id="siteRefInput">
+            <option value="">Sélectionner un chantier</option>
+          </select>
+        </label>
+        <label>Référence produit (optionnel)
+          <input id="refInput" type="text" placeholder="Ex. réf. fabricant ou code EAN">
+        </label>
+        <label>Fournisseur (optionnel)
+          <input id="supplierInput" type="text" placeholder="Ex. Würth, Point.P…">
+        </label>
+        <label>Commentaire (optionnel)
+          <textarea id="commentInput" placeholder="Ex. urgent pour le chantier Dupont"></textarea>
+        </label>
+        <div class="form-actions">
+          <button id="cancelRequestBtn" class="btn-ghost">Annuler</button>
+          <button id="submitRequestBtn" class="btn-primary">Ajouter le besoin</button>
+        </div>
+      </div>
+
+      <div id="statsBar" class="stats-bar"></div>
+
+      <input id="searchInput" class="search" type="text" placeholder="Rechercher un consommable…">
+
+      <div id="cardsList" class="cards"></div>
+
+      <div id="emptyState" class="empty hidden">
+        <svg width="64" height="52" viewBox="0 0 64 52" style="margin-bottom:10px;">
+          <rect x="2" y="2" width="60" height="6" rx="1" fill="#3A3B3D"/>
+          <rect x="2" y="14" width="60" height="6" rx="1" fill="#259188"/>
+          <rect x="2" y="26" width="60" height="6" rx="1" fill="#3A3B3D"/>
+          <rect x="2" y="38" width="60" height="6" rx="1" fill="#259188"/>
+        </svg>
+        <p>Aucun besoin pour le moment.</p>
+        <p>Ajoutez le premier consommable qui manque en production.</p>
+      </div>
+
+      <footer></footer>
+    </div>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, setDoc, arrayUnion, arrayRemove, increment, getDocs
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA_Ivv4hnKx0JhIV2_96cJEYon8ZE9aVuw",
+  authDomain: "revoba-commandes-stock.firebaseapp.com",
+  projectId: "revoba-commandes-stock",
+  storageBucket: "revoba-commandes-stock.firebasestorage.app",
+  messagingSenderId: "72975678459",
+  appId: "1:72975678459:web:ab3ed2fae4d640c7d5295e"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const requestsCol = collection(db, 'requests');
+const staffDocRef = doc(db, 'meta', 'staff');
+const sitesDocRef = doc(db, 'meta', 'sites');
+const tigeSettingsRef = doc(db, 'meta', 'debit_tige');
+const stockItemsCol = collection(db, 'stock_items');
+const stockMovementsCol = collection(db, 'stock_movements');
+const clientOrdersCol = collection(db, 'client_orders');
+
+(function(){
+  const STATUS = { DEMANDE:'demande', COMMANDE:'commande', ATTENTE:'attente', LIVRE:'livre' };
+  const STATUS_ORDER = [STATUS.DEMANDE, STATUS.COMMANDE, STATUS.ATTENTE, STATUS.LIVRE];
+  const STATUS_LABEL = {
+    demande:'Demandé', commande:'Commandé', attente:'En attente de livraison', livre:'Livré'
+  };
+  const STATUS_ICON = {
+    demande: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20l1-4L16 5l3 3L8 19l-4 1z" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+    commande: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 8l9-5 9 5-9 5-9-5z" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M3 8v8l9 5 9-5V8" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+    attente: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 2h12M6 22h12M7 2c0 6 5 6 5 10s-5 4-5 10M17 2c0 6-5 6-5 10s5 4 5 10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    livre: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.4"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+
+  let requests = [];
+  let staff = [];
+  let sites = [];
+  let currentUser = '';
+  let activeFilter = 'all';
+  let searchTerm = '';
+  let etaFormOpenFor = null;
+  let deliveryFormOpenFor = null;
+  let commandeFormOpenFor = null;
+  let drafts = {};
+
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=> t.classList.remove('show'), 2200);
+  }
+
+  function formatDate(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' }) + ' ' +
+           d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  async function createRequestDoc(data){
+    try{
+      await addDoc(requestsCol, data);
+    }catch(e){
+      console.error('Erreur de création', e);
+      toast("Erreur lors de l'enregistrement. Réessayez.");
+    }
+  }
+
+  async function updateRequestDoc(id, data){
+    try{
+      await updateDoc(doc(db, 'requests', id), data);
+    }catch(e){
+      console.error('Erreur de mise à jour', e);
+      toast("Erreur lors de l'enregistrement. Réessayez.");
+    }
+  }
+
+  async function deleteRequestDoc(id){
+    try{
+      await deleteDoc(doc(db, 'requests', id));
+    }catch(e){
+      console.error('Erreur de suppression', e);
+      toast("Erreur lors de la suppression. Réessayez.");
+    }
+  }
+
+  async function addStaffName(name){
+    try{
+      await setDoc(staffDocRef, { names: arrayUnion(name) }, { merge:true });
+    }catch(e){
+      console.error('Erreur équipe', e);
+      toast("Erreur lors de l'enregistrement de l'équipe.");
+    }
+  }
+
+  async function removeStaffName(name){
+    try{
+      await setDoc(staffDocRef, { names: arrayRemove(name) }, { merge:true });
+    }catch(e){
+      console.error('Erreur équipe', e);
+      toast("Erreur lors de l'enregistrement de l'équipe.");
+    }
+  }
+
+  async function addSiteName(name){
+    try{
+      await setDoc(sitesDocRef, { names: arrayUnion(name) }, { merge:true });
+    }catch(e){
+      console.error('Erreur chantiers', e);
+      toast("Erreur lors de l'enregistrement des chantiers.");
+    }
+  }
+
+  async function removeSiteName(name){
+    try{
+      await setDoc(sitesDocRef, { names: arrayRemove(name) }, { merge:true });
+    }catch(e){
+      console.error('Erreur chantiers', e);
+      toast("Erreur lors de l'enregistrement des chantiers.");
+    }
+  }
+
+  let firstLoadDone = { requests:false, staff:false, sites:false };
+  function checkFirstLoad(){
+    if(firstLoadDone.requests && firstLoadDone.staff && firstLoadDone.sites){
+      $('loadingState').classList.add('hidden');
+      $('content').classList.remove('hidden');
+    }
+  }
+
+  function initListeners(){
+    currentUser = localStorage.getItem('etabli-current-user') || '';
+
+    onSnapshot(requestsCol, (snap) => {
+      requests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      firstLoadDone.requests = true;
+      checkFirstLoad();
+      renderCards();
+    }, (e) => { console.error(e); toast('Erreur de connexion à la base de données.'); });
+
+    onSnapshot(staffDocRef, (snap) => {
+      staff = snap.exists() ? (snap.data().names || []) : [];
+      firstLoadDone.staff = true;
+      checkFirstLoad();
+      renderUserSelect(); renderTeam();
+    }, (e) => { console.error(e); });
+
+    onSnapshot(sitesDocRef, (snap) => {
+      sites = snap.exists() ? (snap.data().names || []) : [];
+      firstLoadDone.sites = true;
+      checkFirstLoad();
+      renderSiteSelect(); renderSites();
+    }, (e) => { console.error(e); });
+
+    // Le catalogue n'est créé automatiquement que si la base est vide.
+    // Les nouvelles références de la fiche sont ajoutées via "Mettre à jour le catalogue" (jamais en silence),
+    // ce qui évite aussi de recréer une référence que l'on vient de supprimer.
+    seedStockCatalogIfEmpty();
+
+    onSnapshot(stockItemsCol, (snap) => {
+      stockItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderStockList();
+      renderArchivedList();
+      renderNeedsPanel();
+      renderMigrationBanner();
+    }, (e) => { console.error(e); });
+
+    onSnapshot(tigeSettingsRef, (snap) => {
+      tigeSettings = Object.assign({}, TIGE_DEFAULTS, snap.exists() ? snap.data() : {});
+      renderTigeSettings();
+    }, (e) => { console.error(e); });
+
+    onSnapshot(clientOrdersCol, (snap) => {
+      clientOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderOrdersList();
+      renderNeedsPanel();
+    }, (e) => { console.error(e); });
+  }
+
+  function renderUserSelect(){
+    const sel = $('userSelect');
+    sel.innerHTML = '<option value="">Sélectionner mon nom</option>' +
+      staff.map(n => `<option value="${escapeHtml(n)}" ${n===currentUser?'selected':''}>${escapeHtml(n)}</option>`).join('');
+  }
+
+  function renderSiteSelect(){
+    const sel = $('siteRefInput');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Sélectionner un chantier</option>' +
+      sites.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    sel.value = current;
+
+    const sel2 = $('deliverySiteInput');
+    const current2 = sel2.value;
+    sel2.innerHTML = '<option value="">Sélectionner un chantier</option>' +
+      sites.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    sel2.value = current2;
+
+    const sel3 = $('searchSiteInput');
+    const current3 = sel3.value;
+    sel3.innerHTML = '<option value="">Tous les chantiers</option>' +
+      sites.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    sel3.value = current3;
+  }
+
+  function getSearchMatches(){
+    const siteFilter = $('searchSiteInput').value;
+    const supplierFilter = $('searchSupplierInput').value.trim().toLowerCase();
+    return requests.filter(r => {
+      const siteOk = !siteFilter || r.siteRef === siteFilter;
+      const supplierOk = !supplierFilter || (r.supplier || '').toLowerCase().includes(supplierFilter);
+      return siteOk && supplierOk;
+    }).slice().sort((a,b)=> new Date(b.requestedAt) - new Date(a.requestedAt));
+  }
+
+  function renderSearchResults(){
+    const matches = getSearchMatches();
+    const container = $('searchResults');
+    if(matches.length === 0){
+      container.innerHTML = '<p style="font-size:13px; color:var(--ink-soft);">Aucun résultat pour ces critères.</p>';
+      return;
+    }
+    container.innerHTML = `<p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:8px;">${matches.length} résultat${matches.length>1?'s':''}</p>` +
+      matches.map(r => {
+        const lastDelivery = r.deliveries && r.deliveries.length ? r.deliveries[r.deliveries.length-1] : null;
+        return `<div style="border-bottom:1px solid var(--line); padding:10px 0;">
+          <p style="font-weight:600; margin:0 0 2px;">${escapeHtml(r.item)}</p>
+          <p class="meta">Chantier : ${escapeHtml(r.siteRef || '—')} · Fournisseur : ${escapeHtml(r.supplier || '—')}</p>
+          <p class="meta">Statut : ${STATUS_LABEL[r.status]}${lastDelivery ? ' · dernière livraison le ' + formatDate(lastDelivery.at) + ' par ' + escapeHtml(lastDelivery.by) : ''}</p>
+        </div>`;
+      }).join('');
+  }
+
+  function exportSearchToCsv(){
+    const matches = getSearchMatches();
+    const headers = ['Consommable','Chantier','Fournisseur','Référence','Statut','Demandé par','Date demande','Commandé par','Date commande','Dernière livraison par','Date dernière livraison','Commentaire livraison'];
+    const rows = matches.map(r => {
+      const lastDelivery = r.deliveries && r.deliveries.length ? r.deliveries[r.deliveries.length-1] : null;
+      return [
+        r.item, r.siteRef || '', r.supplier || '', r.reference || '', STATUS_LABEL[r.status] || '',
+        r.requestedBy || '', formatDate(r.requestedAt), r.orderedBy || '', formatDate(r.orderedAt),
+        lastDelivery ? lastDelivery.by : '', lastDelivery ? formatDate(lastDelivery.at) : '',
+        lastDelivery ? (lastDelivery.comment || '') : ''
+      ];
+    });
+    const csvEscape = (v) => '"' + String(v).replace(/"/g,'""') + '"';
+    const csv = [headers, ...rows].map(row => row.map(csvEscape).join(';')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'etabli-export-' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function requireUser(){
+    if(!currentUser){
+      $('userSelect').classList.add('attention');
+      toast('Sélectionnez votre nom en haut avant de continuer');
+      setTimeout(()=> $('userSelect').classList.remove('attention'), 1600);
+      return false;
+    }
+    return true;
+  }
+
+  function renderStats(){
+    const counts = { demande:0, commande:0, attente:0, livre:0 };
+    requests.forEach(r => { if(counts[r.status] !== undefined) counts[r.status]++; });
+    const cards = [
+      { key:'demande', label:'Demandé' },
+      { key:'commande', label:'Commandé' },
+      { key:'attente', label:'En attente' },
+      { key:'livre', label:'Livré' }
+    ];
+    $('statsBar').innerHTML = cards.map(c => `
+      <button class="stat-card stat-${c.key}${activeFilter===c.key ? ' stat-active' : ''}" data-filter="${c.key}">
+        <span class="stat-count">${counts[c.key]}</span>
+        <span class="stat-label">${c.label}</span>
+      </button>`).join('');
+  }
+
+  function renderCards(){
+    renderStats();
+    let list = requests.slice().sort((a,b)=> new Date(b.requestedAt) - new Date(a.requestedAt));
+
+    if(activeFilter !== 'all'){
+      list = list.filter(r => r.status === activeFilter);
+    }
+    if(searchTerm.trim()){
+      const q = searchTerm.trim().toLowerCase();
+      list = list.filter(r => r.item.toLowerCase().includes(q));
+    }
+
+    const container = $('cardsList');
+    const empty = $('emptyState');
+
+    if(list.length === 0){
+      container.innerHTML = '';
+      empty.classList.remove('hidden');
+      empty.querySelector('p:last-child').textContent = requests.length === 0
+        ? "Ajoutez le premier consommable qui manque en production."
+        : "Aucune demande ne correspond à ce filtre.";
+      return;
+    }
+    empty.classList.add('hidden');
+
+    container.innerHTML = list.map(r => renderCard(r)).join('');
+  }
+
+  function renderCard(r){
+    let actions = '';
+    if(r.status === STATUS.DEMANDE){
+      actions = `<button class="btn-small btn-commande" data-action="openCommande" data-id="${r.id}">${STATUS_ICON.commande} Marquer comme commandé</button>`;
+    } else if(r.status === STATUS.COMMANDE){
+      actions = `<button class="btn-small btn-attente" data-action="openEta" data-id="${r.id}">${STATUS_ICON.attente} Signaler un délai</button>
+                 <button class="btn-small btn-livre" data-action="openDelivery" data-id="${r.id}">${STATUS_ICON.livre} Marquer comme livré</button>`;
+    } else if(r.status === STATUS.ATTENTE){
+      actions = `<button class="btn-small btn-livre" data-action="openDelivery" data-id="${r.id}">${STATUS_ICON.livre} Marquer comme livré</button>`;
+    }
+
+    const statusIndex = STATUS_ORDER.indexOf(r.status);
+    if(statusIndex > 0){
+      actions += ` <button class="btn-ghost" data-action="revertStatus" data-id="${r.id}" style="padding:7px 12px; font-size:12.5px;">◂ Revenir en arrière</button>`;
+    }
+    actions += ` <button class="btn-ghost" data-action="deleteRequest" data-id="${r.id}" style="padding:7px 12px; font-size:12.5px; color:var(--attente);">Supprimer</button>`;
+
+    let commandeForm = '';
+    if(commandeFormOpenFor === r.id){
+      commandeForm = `<div class="eta-form" style="flex-direction:column; align-items:stretch;">
+        <input type="text" id="commandeSupplierInput-${r.id}" placeholder="Fournisseur (obligatoire) — ex. Würth, Point.P…" value="${escapeHtml(drafts['commandeSupplierInput-'+r.id] ?? (r.supplier || ''))}" style="font-family:'Inter',sans-serif; padding:8px 10px; border-radius:7px; border:1px solid var(--line);">
+        <textarea id="commandeCommentInput-${r.id}" placeholder="Commentaire (optionnel) — ex. colis déposé en point relais" style="font-family:'Inter',sans-serif; padding:8px 10px; border-radius:7px; border:1px solid var(--line); min-height:50px; resize:vertical;">${escapeHtml(drafts['commandeCommentInput-'+r.id] || '')}</textarea>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-small btn-commande" data-action="confirmCommande" data-id="${r.id}">Confirmer la commande</button>
+          <button class="btn-ghost" data-action="cancelCommande" data-id="${r.id}" style="padding:6px 12px; font-size:13px;">Annuler</button>
+        </div>
+      </div>`;
+    }
+
+    let etaForm = '';
+    if(etaFormOpenFor === r.id){
+      etaForm = `<div class="eta-form">
+        <input type="date" id="etaInput-${r.id}" value="${escapeHtml(drafts['etaInput-'+r.id] || '')}">
+        <button class="btn-small btn-attente" data-action="confirmEta" data-id="${r.id}">Confirmer</button>
+        <button class="btn-ghost" data-action="cancelEta" data-id="${r.id}" style="padding:6px 12px; font-size:13px;">Annuler</button>
+      </div>`;
+    }
+
+    let deliveryForm = '';
+    if(deliveryFormOpenFor === r.id){
+      deliveryForm = `<div class="eta-form" style="flex-direction:column; align-items:stretch;">
+        <textarea id="deliveryCommentInput-${r.id}" placeholder="Commentaire (optionnel) — ex. donné à Cécile, déposé en atelier découpe" style="font-family:'Inter',sans-serif; padding:8px 10px; border-radius:7px; border:1px solid var(--line); min-height:50px; resize:vertical;">${escapeHtml(drafts['deliveryCommentInput-'+r.id] || '')}</textarea>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-small btn-attente" data-action="confirmDeliveryPartial" data-id="${r.id}">Livraison partielle, reste à venir</button>
+          <button class="btn-small btn-livre" data-action="confirmDeliveryComplete" data-id="${r.id}">Livraison complète</button>
+          <button class="btn-ghost" data-action="cancelDelivery" data-id="${r.id}" style="padding:6px 12px; font-size:13px;">Annuler</button>
+        </div>
+      </div>`;
+    }
+
+    return `
+    <div class="card status-${r.status}">
+      <div class="card-top">
+        <div class="card-title">
+          <span class="status-icon-badge">${STATUS_ICON[r.status]}</span>
+          <h3>${escapeHtml(r.item)}</h3>
+        </div>
+        <span class="status-label">${STATUS_LABEL[r.status]}${(r.deliveries && r.deliveries.some(d=>d.type==='partial') && r.status !== STATUS.LIVRE) ? ' · partiel' : ''}</span>
+      </div>
+      ${r.quantity ? `<p class="qty">${escapeHtml(r.quantity)}</p>` : ''}
+      ${r.siteRef ? `<p class="qty">Chantier : ${escapeHtml(r.siteRef)}</p>` : ''}
+      ${(r.reference || r.supplier) ? `<p class="qty">${r.reference ? 'Réf. ' + escapeHtml(r.reference) : ''}${r.reference && r.supplier ? ' · ' : ''}${r.supplier ? escapeHtml(r.supplier) : ''}</p>` : ''}
+      ${r.comment ? `<p class="comment">${escapeHtml(r.comment)}</p>` : ''}
+      <p class="meta">Demandé par ${escapeHtml(r.requestedBy)} · ${formatDate(r.requestedAt)}</p>
+      ${r.orderedBy ? `<p class="meta">Commandé par ${escapeHtml(r.orderedBy)} · ${formatDate(r.orderedAt)}</p>` : ''}
+      ${r.orderComment ? `<p class="comment">${escapeHtml(r.orderComment)}</p>` : ''}
+      ${r.deliveryEta ? `<p class="meta eta">Livraison estimée : ${new Date(r.deliveryEta).toLocaleDateString('fr-FR')}</p>` : ''}
+      ${r.deliveries && r.deliveries.length ? r.deliveries.map(d => `
+      <p class="meta${d.type==='partial' ? ' eta' : ''}">
+        ${d.type === 'partial' ? 'Reçu partiellement' : 'Réceptionné'} par ${escapeHtml(d.by)} · ${formatDate(d.at)}
+      </p>${d.comment ? `<p class="comment">${escapeHtml(d.comment)}</p>` : ''}`).join('') : ''}
+      ${commandeForm}
+      ${etaForm}
+      ${deliveryForm}
+      <div class="card-actions">${actions}</div>
+    </div>`;
+  }
+
+  function renderTeam(){
+    $('teamList').innerHTML = staff.length
+      ? staff.map(n => `<li>${escapeHtml(n)} <button data-action="removeStaff" data-name="${escapeHtml(n)}">Retirer</button></li>`).join('')
+      : '<li style="color:var(--ink-soft); border:none;">Aucun collègue ajouté pour le moment.</li>';
+  }
+
+  function renderSites(){
+    $('sitesList').innerHTML = sites.length
+      ? sites.map(n => `<li>${escapeHtml(n)} <button data-action="removeSite" data-name="${escapeHtml(n)}">Retirer</button></li>`).join('')
+      : '<li style="color:var(--ink-soft); border:none;">Aucun chantier ajouté pour le moment.</li>';
+  }
+
+  // ===================== STOCK & COMMANDES CLIENTS =====================
+
+  // Catalogue aligné sur la fiche de contrôle (version octobre 2026).
+  // L'ordre suit celui de la fiche. Les références de stock portent le suffixe " (Noir)" ou " (Blanc)".
+  const CATALOG_SEED = {
+    penture: ["2 TROUS","3 TROUS","4 TROUS","5 TROUS","6 TROUS","7 TROUS","8 TROUS","9 TROUS (6mm)","10 TROUS (6mm)","ATLANTIC",
+      "CONTRE PENTURE 2T","CONTRE PENTURE 3T","CONTRE PENTURE 4T","CONTRE PENTURE 5T","CONTRE PENTURE 6T","CONTRE PENTURE 7T","CONTRE PENTURE 8T","CONTRE PENTURE 9T","CONTRE PENTURE 10T",
+      "MARSEILLAIS COMPO court","MARSEILLAIS COMPO long","MARSEILLAIS ALU","AUTO COMPO court","AUTO COMPO long",
+      "PAILETTE ACIER court","PAILETTE ACIER long","STOP BOX COMPO court","STOP BOX COMPO long","BERGERE COMPO court","BERGERE COMPO long"],
+    gonds: ["Compo 75 mm","Acier Zingué","Gond Inox","Gond Platine","Gond à Visser compo"],
+    vis: ["PENTURE 7X40","CROCHET 4.8X19 TR","Support Poignée 4x25","Support Poignée Secu 4x35","LACET 4X35","TRCC 7X40","TRCC CHARNIERE 7X45","ECROU COMPO M7","ECROU ALU M7","CHARNIERE 7X50","Vis 6x25 Feuillure","Verrou SDO SX","Verrou SDO DX","Vis 4x25 Verrou SDO","Vis 4x50 Butée si laqué","Vis 4,8x19TR paillette","Vis T3C renfort Drapeau","Vis 4.8x19 TR poignée tirage"],
+    quincaillerie: ["Tige Espagnolette","Kit Espa Compo","Kit espa Alu","Kit espa Sécu","Support poignée","POT RETOUCHE","KIT SERRURE 3 PTS carénée","Carénage suppl 3800","Serrure 3 pts Stremler","DOUILLE REDUCTION","RONDELLE COMPENSATION","LACET U","DOUILLE VERROU SDO","POIGNET TIRAGE","BARRE ANTI EFFRACTION","CHARNIERE JUMELAGE","ARRET à PINCE","SACHET BUTEE","BUTEE","Crochet crémaillère 300","Crochet crémaillère 400","Crochet crémaillère 500","Crochet crémaillère 600","Crémaillère seule"]
+  };
+
+  // Anciennes références → nouvelle référence proposée lors de la mise à jour du catalogue.
+  // preselect:true = proposition cochée par défaut ; sinon la ligne est proposée en "Archiver" et la suggestion reste à choisir.
+  const MIGRATION_SUGGESTIONS = {
+    "support poignée 4x35": { to: "Support Poignée Secu 4x35", preselect: true },
+    "ecrou borgne alu burg": { to: "ECROU ALU M7", preselect: false },
+    "vis 6x30": { to: "Vis 6x25 Feuillure", preselect: false },
+    "marseillais compo": { to: "MARSEILLAIS COMPO court", preselect: false },
+    "pailette acier": { to: "PAILETTE ACIER court", preselect: false },
+    "stop box compo": { to: "STOP BOX COMPO court", preselect: false },
+    "bergere compo": { to: "BERGERE COMPO court", preselect: false }
+  };
+
+  function normName(str){ return String(str || '').trim().replace(/\s+/g,' ').toLowerCase(); }
+
+  function catalogIndex(){
+    const idx = {};
+    for(const cat of Object.keys(CATALOG_SEED)){
+      for(const name of CATALOG_SEED[cat]){ idx[normName(name)] = { name, cat }; }
+    }
+    return idx;
+  }
+
+  // Lien penture ↔ contre-penture : un mouvement de stock sur l'une s'applique automatiquement à l'autre (même couleur)
+  const PENTURE_TO_CONTRE = {
+    "2 TROUS": "CONTRE PENTURE 2T",
+    "3 TROUS": "CONTRE PENTURE 3T",
+    "4 TROUS": "CONTRE PENTURE 4T",
+    "5 TROUS": "CONTRE PENTURE 5T",
+    "6 TROUS": "CONTRE PENTURE 6T",
+    "7 TROUS": "CONTRE PENTURE 7T",
+    "8 TROUS": "CONTRE PENTURE 8T",
+    "9 TROUS (6mm)": "CONTRE PENTURE 9T",
+    "10 TROUS (6mm)": "CONTRE PENTURE 10T"
+  };
+  const CATEGORY_LABELS = { penture:'Penture', gonds:'Gonds', vis:'Vis', quincaillerie:'Quincaillerie', lame_90x25:'Lame 90x25', lame_100x25:'Barre (100x25)', lame_70x19:'Écharpe (70x19)', lame_50x15:'Couvre-joint (50x15)', lame_100x10:'TGF2 (100x10)' };
+  const CATEGORY_DOMAIN = { penture:'quincaillerie', gonds:'quincaillerie', vis:'quincaillerie', quincaillerie:'quincaillerie', lame_90x25:'lames', lame_100x25:'lames', lame_70x19:'lames', lame_50x15:'lames', lame_100x10:'lames' };
+
+  const COLOR_CODE_NAMES = {
+    '001':'Blanc', '002':'Gris', '003':'Vert Clair', '004':'Pierre', '005':'Ivoire', '006':'Lavande',
+    '008':'Vert Foncé', '009':'Rouge', '011':'Marron foncé', '012':'Bleu marine', '013':'Gris foncé',
+    '019':'Vert Blanc', '023':'Bleu Riviera', '0101':'Marron clair'
+  };
+
+  // Code couleur saisi en nombre (ex. 11 au lieu de 011, 101 au lieu de 0101) → code du catalogue
+  function normalizeLameCode(code){
+    const c = String(code || '').trim();
+    if(!c || COLOR_CODE_NAMES[c] || !/^\d+$/.test(c)) return c;
+    const hit = Object.keys(COLOR_CODE_NAMES).find(k => parseInt(k, 10) === parseInt(c, 10));
+    return hit || c;
+  }
+
+  function lameDisplayName(name){
+    const parts = name.trim().split(/\s+/);
+    const code = parts[parts.length - 1];
+    const colorName = COLOR_CODE_NAMES[code];
+    return colorName ? (name + ' — ' + colorName) : name;
+  }
+
+  function getItemZone(item){
+    const domain = CATEGORY_DOMAIN[item.category] || 'quincaillerie';
+    if(domain === 'lames') return 'lames';
+    if(item.name.endsWith('(Noir)')) return 'quinc_noir';
+    if(item.name.endsWith('(Blanc)')) return 'quinc_blanc';
+    return 'quinc_noir'; // référence sans couleur (créée avant la gestion Blanc/Noir) : repli visible plutôt qu'invisible
+  }
+
+  const LAME_SEED = {
+    lame_90x25: ["LAME 90X25 001", "LAME 90X25 002", "LAME 90X25 003", "LAME 90X25 004", "LAME 90X25 005", "LAME 90X25 006", "LAME 90X25 008", "LAME 90X25 009", "LAME 90X25 011", "LAME 90X25 012", "LAME 90X25 013", "LAME 90X25 0101", "LAME 90X25 019", "LAME 90X25 023"],
+    lame_100x25: ["LAME 100X25 001", "LAME 100X25 002", "LAME 100X25 003", "LAME 100X25 004", "LAME 100X25 005", "LAME 100X25 006", "LAME 100X25 008", "LAME 100X25 009", "LAME 100X25 011", "LAME 100X25 012", "LAME 100X25 013", "LAME 100X25 0101", "LAME 100X25 019", "LAME 100X25 023"],
+    lame_70x19: ["LAME 70X19 001", "LAME 70X19 002", "LAME 70X19 003", "LAME 70X19 004", "LAME 70X19 005", "LAME 70X19 006", "LAME 70X19 008", "LAME 70X19 009", "LAME 70X19 011", "LAME 70X19 012", "LAME 70X19 013", "LAME 70X19 0101", "LAME 70X19 019", "LAME 70X19 023"],
+    lame_50x15: ["LAME 50X15 001", "LAME 50X15 002", "LAME 50X15 003", "LAME 50X15 004", "LAME 50X15 005", "LAME 50X15 006", "LAME 50X15 008", "LAME 50X15 009", "LAME 50X15 011", "LAME 50X15 012", "LAME 50X15 013", "LAME 50X15 0101", "LAME 50X15 019", "LAME 50X15 023"],
+    lame_100x10: ["LAME 100X10 001", "LAME 100X10 002", "LAME 100X10 003", "LAME 100X10 004", "LAME 100X10 005", "LAME 100X10 006", "LAME 100X10 0101", "LAME 100X10 023"]
+  };
+
+  // Réglages du débit des tiges d'espagnolette (modifiables dans "Gérer le stock")
+  const TIGE_DEFAULTS = { longueur: 4600, chute: 100, trait: 3 };
+  let tigeSettings = Object.assign({}, TIGE_DEFAULTS);
+
+  let stockItems = [];
+  let clientOrders = [];
+  let pendingImportData = null;
+  let editingOrderId = null;
+  let stockActiveDomain = 'quinc_noir';
+  let stockSearchTerm = '';
+
+  async function seedStockCatalogIfEmpty(){
+    try{
+      const snap = await getDocs(stockItemsCol);
+      if(!snap.empty) return;
+      for(const cat of Object.keys(CATALOG_SEED)){
+        for(const name of CATALOG_SEED[cat]){
+          for(const couleur of ['Blanc','Noir']){
+            await addDoc(stockItemsCol, { name: name + ' (' + couleur + ')', category: cat, stock: 0, seuil: 0 });
+          }
+        }
+      }
+      for(const cat of Object.keys(LAME_SEED)){
+        for(const name of LAME_SEED[cat]){
+          await addDoc(stockItemsCol, { name, category: cat, stock: 0, seuil: 0 });
+        }
+      }
+    }catch(e){ console.error('Erreur initialisation catalogue', e); }
+  }
+
+  const QUINCAILLERIE_COLORS = ['Blanc', 'Noir'];
+
+  function withColor(baseName, couleur){
+    return baseName + ' (' + couleur + ')';
+  }
+
+  function findLinkedContrePenture(item){
+    for(const couleur of QUINCAILLERIE_COLORS){
+      const suffix = ' (' + couleur + ')';
+      if(item.name.endsWith(suffix)){
+        const baseName = item.name.slice(0, -suffix.length);
+        const contreBase = PENTURE_TO_CONTRE[baseName];
+        if(contreBase){ return findStockItemByName(contreBase + suffix); }
+      }
+    }
+    return null;
+  }
+
+  function renderStockList(){
+    const container = $('stockList');
+    if(!stockItems.length){ container.innerHTML = '<p style="color:var(--ink-soft); font-size:13px;">Chargement du catalogue…</p>'; return; }
+    const search = stockSearchTerm.trim().toLowerCase();
+    const byCat = {};
+    activeStockItems()
+      .filter(it => getItemZone(it) === stockActiveDomain)
+      .filter(it => !search || it.name.toLowerCase().includes(search))
+      .sort((a,b)=> a.name.localeCompare(b.name))
+      .forEach(it => { (byCat[it.category] = byCat[it.category] || []).push(it); });
+    let html = '';
+    const domainGroup = stockActiveDomain === 'lames' ? 'lames' : 'quincaillerie';
+    const catsInDomain = Object.keys(CATEGORY_LABELS).filter(c => CATEGORY_DOMAIN[c] === domainGroup);
+    for(const cat of catsInDomain){
+      if(!byCat[cat] || !byCat[cat].length) continue;
+      html += `<div class="stock-category">${CATEGORY_LABELS[cat]}</div>`;
+      html += byCat[cat].map(it => {
+        const displayStock = stockActiveDomain === 'lames' ? Math.round(it.stock) : it.stock;
+        const displayName = stockActiveDomain === 'lames' ? lameDisplayName(it.name) : it.name;
+        return `
+        <div class="stock-row">
+          <span class="stock-row-name">${escapeHtml(displayName)}</span>
+          <div class="stock-row-controls">
+            <button class="stock-btn" data-action="stockMinus" data-id="${it.id}">−</button>
+            <input type="number" step="1" class="stock-row-input${it.stock <= 0 ? ' low' : ''}" data-action="stockSetValue" data-id="${it.id}" value="${displayStock}">
+            <button class="stock-btn" data-action="stockPlus" data-id="${it.id}">+</button>
+            <button class="stock-btn" data-action="stockDelete" data-id="${it.id}" title="Archiver cette référence (stock conservé)">×</button>
+            <label class="stock-seuil-label">Seuil
+              <input type="number" step="1" class="stock-seuil-input" data-action="stockSetSeuil" data-id="${it.id}" value="${typeof it.seuil === 'number' ? it.seuil : 0}">
+            </label>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    if(!html){ html = '<p style="color:var(--ink-soft); font-size:13px;">Aucune référence dans ce domaine.</p>'; }
+    container.innerHTML = html;
+  }
+
+  function findStockItemByName(name, includeArchived){
+    const norm = normName(name);
+    return stockItems.find(it => (includeArchived || !it.archived) && normName(it.name) === norm);
+  }
+
+  function activeStockItems(){ return stockItems.filter(it => !it.archived); }
+
+  function displayQty(name, qty){
+    const item = findStockItemByName(name);
+    const domain = item ? (CATEGORY_DOMAIN[item.category] || 'quincaillerie') : 'quincaillerie';
+    return domain === 'lames' ? Math.ceil(qty) : qty;
+  }
+
+  function renderOrdersList(){
+    const container = $('ordersList');
+    if(!clientOrders.length){ container.innerHTML = '<p style="color:var(--ink-soft); font-size:13px;">Aucune commande enregistrée.</p>'; return; }
+    const sorted = clientOrders.slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+    container.innerHTML = sorted.map(o => {
+      const itemsSummary = (o.items||[]).map(i => `${escapeHtml(i.name)} (${displayQty(i.name, i.qty)})`).join(', ');
+      return `<div class="order-card">
+        <div class="order-card-top">
+          <div>
+            ${o.semaine ? `<span class="order-week-badge">${escapeHtml(o.semaine)}</span> ` : ''}<strong>${escapeHtml(o.client||'—')}</strong> — ${escapeHtml(o.ref||'—')}${o.couleur ? ' · ' + escapeHtml(o.couleur) : ''}${o.couleurQuincaillerie ? ' · Quinc. ' + escapeHtml(o.couleurQuincaillerie) : ''}
+          </div>
+          <span class="order-status-pill ${o.status}">${o.status === 'fabriquee' ? 'Fabriquée' : 'Enregistrée'}</span>
+        </div>
+        <p class="order-items-summary">${itemsSummary || 'Aucune pièce renseignée'}</p>
+        <div class="card-actions" style="margin-top:8px;">
+          ${o.status !== 'fabriquee' ? `<button class="btn-small btn-livre" data-action="manufactureOrder" data-id="${o.id}">Marquer comme fabriquée</button>` : ''}
+          <button class="btn-ghost" data-action="deleteOrder" data-id="${o.id}" style="padding:7px 12px; font-size:12.5px;">Supprimer</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  let needsActiveDomain = 'quinc_noir';
+
+  function zoneForNeedName(name){
+    const item = findStockItemByName(name);
+    if(item) return getItemZone(item);
+    if(name.endsWith('(Noir)')) return 'quinc_noir';
+    if(name.endsWith('(Blanc)')) return 'quinc_blanc';
+    if(name.toUpperCase().startsWith('LAME ')) return 'lames';
+    return 'quinc_noir';
+  }
+
+  let needsSearchTerm = '';
+  let needsFilter = 'all';
+
+  // Tableau Besoins vs stock : TOUTES les références actives du stock de l'onglet,
+  // avec le besoin des commandes non fabriquées (0 si aucune commande ne les utilise).
+  // Les besoins portant sur une référence absente du stock sont ajoutés en fin de liste et signalés.
+  function renderNeedsPanel(){
+    const isLames = needsActiveDomain === 'lames';
+    const pending = clientOrders.filter(o => o.status !== 'fabriquee');
+    const needMap = {};
+    pending.forEach(o => (o.items||[]).forEach(i => {
+      if(i.tracked === false) return;
+      const k = normName(i.name);
+      needMap[k] = (needMap[k] || 0) + Number(i.qty || 0);
+    }));
+
+    const rows = [];
+    const used = new Set();
+    for(const it of activeStockItems()){
+      if(getItemZone(it) !== needsActiveDomain) continue;
+      const k = normName(it.name);
+      used.add(k);
+      rows.push({ name: it.name, category: it.category, need: needMap[k] || 0, stock: Number(it.stock) || 0, seuil: typeof it.seuil === 'number' ? it.seuil : 0, missing: false });
+    }
+    for(const k of Object.keys(needMap)){
+      if(used.has(k)) continue;
+      const original = pending.flatMap(o => o.items || []).find(i => normName(i.name) === k);
+      const name = original ? original.name : k;
+      if(zoneForNeedName(name) !== needsActiveDomain) continue;
+      rows.push({ name, category: '_missing', need: needMap[k], stock: 0, seuil: 0, missing: true });
+    }
+    rows.forEach(r => {
+      if(isLames){ r.need = Math.ceil(r.need); r.stock = Math.round(r.stock); }
+      r.remaining = r.stock - r.need;
+      r.alert = r.remaining < r.seuil || r.remaining < 0;
+    });
+
+    const nAlert = rows.filter(r => r.alert && (r.need > 0 || r.missing)).length;
+    const nNeed = rows.filter(r => r.need > 0).length;
+    $('needsSummary').innerHTML = `${rows.length} référence${rows.length>1?'s':''} · ${nNeed} avec un besoin` +
+      (nAlert ? ` · <b>${nAlert} en manque ou sous le seuil à cause des commandes</b>` : '');
+
+    const search = normName(needsSearchTerm);
+    const shown = rows.filter(r => {
+      if(search && !normName(isLames ? lameDisplayName(r.name) : r.name).includes(search)) return false;
+      if(needsFilter === 'need') return r.need > 0;
+      if(needsFilter === 'alert') return r.alert;
+      return true;
+    });
+
+    const container = $('needsList');
+    if(!stockItems.length){ container.innerHTML = '<p style="color:var(--ink-soft); font-size:13px;">Chargement du stock…</p>'; return; }
+    if(!shown.length){
+      container.innerHTML = '<p style="color:var(--ink-soft); font-size:13px;">Aucune référence ne correspond à ce filtre.</p>';
+      return;
+    }
+
+    let html = isLames ? '<p style="font-size:12px; color:var(--ink-soft); margin:0 0 8px;">Besoins arrondis à la lame supérieure.</p>' : '';
+    html += `<div class="needs-row header"><span>Référence</span><span>Besoin</span><span>Stock</span><span>Stock restant</span></div>`;
+    const domainGroup = isLames ? 'lames' : 'quincaillerie';
+    const cats = Object.keys(CATEGORY_LABELS).filter(c => CATEGORY_DOMAIN[c] === domainGroup);
+    cats.push('_missing');
+    for(const cat of cats){
+      const group = shown.filter(r => cat === '_missing' ? (r.missing || !cats.includes(r.category)) : (!r.missing && r.category === cat))
+        .sort((a,b)=> a.name.localeCompare(b.name));
+      if(!group.length) continue;
+      html += `<div class="stock-category">${cat === '_missing' ? 'Besoins sans référence dans le stock' : CATEGORY_LABELS[cat]}</div>`;
+      html += group.map(r => {
+        const displayName = isLames ? lameDisplayName(r.name) : r.name;
+        return `<div class="needs-row${r.need > 0 ? '' : ' no-need'}">
+          <span>${escapeHtml(displayName)}${r.missing ? '<span class="missing-tag">absente du stock</span>' : ''}</span>
+          <span>${r.need}</span>
+          <span>${r.stock}</span>
+          <span class="${r.alert ? 'shortfall' : ''}">${r.remaining}</span>
+        </div>`;
+      }).join('');
+    }
+    container.innerHTML = html;
+  }
+
+
+  // Catalogue du formulaire de commande = fiche de contrôle + lames + références ajoutées à la main dans le stock.
+  function getEditorCatalog(){
+    const cat = {};
+    for(const c of Object.keys(CATALOG_SEED)) cat[c] = CATALOG_SEED[c].slice();
+    for(const c of Object.keys(LAME_SEED)) cat[c] = LAME_SEED[c].slice();
+    const seen = new Set(Object.values(cat).flat().map(normName));
+    for(const it of activeStockItems().slice().sort((a,b)=> a.name.localeCompare(b.name))){
+      if(!cat[it.category]) continue;
+      const isLame = CATEGORY_DOMAIN[it.category] === 'lames';
+      if(!isLame && !/\((Noir|Blanc)\)\s*$/.test(it.name)) continue;
+      const base = isLame ? it.name : stripColorSuffix(it.name);
+      if(!seen.has(normName(base))){ seen.add(normName(base)); cat[it.category].push(base); }
+    }
+    return cat;
+  }
+
+  function resolveCatalogName(raw){
+    const n = normName(raw);
+    if(!n) return null;
+    const cat = getEditorCatalog();
+    for(const c of Object.keys(cat)){
+      const hit = cat[c].find(name => normName(name) === n);
+      if(hit) return hit;
+    }
+    return null;
+  }
+
+  function renderOrderItemsEditor(items){
+    let html = '<div class="stock-domain-tabs" style="margin-bottom:10px;">';
+    html += '<button type="button" class="order-domain-tab stock-domain-tab active" data-odomain="quincaillerie">Quincaillerie</button>';
+    html += '<button type="button" class="order-domain-tab stock-domain-tab" data-odomain="lames">Lames de volets</button>';
+    html += '</div>';
+    const EDITOR_CATALOG = getEditorCatalog();
+    for(const cat of Object.keys(EDITOR_CATALOG)){
+      const domain = CATEGORY_DOMAIN[cat] || 'quincaillerie';
+      html += `<div class="order-domain-group order-domain-${domain}" style="${domain === 'lames' ? 'display:none;' : ''}">`;
+      html += `<div class="stock-category">${CATEGORY_LABELS[cat]}</div>`;
+      html += EDITOR_CATALOG[cat].map(name => {
+        const existing = items.find(i => normName(i.name) === normName(name));
+        const val = existing ? existing.qty : '';
+        const safeId = 'oi-' + cat + '-' + name.replace(/[^a-zA-Z0-9]/g,'_');
+        const stepAttr = domain === 'lames' ? ' step="1"' : '';
+        return `<div class="order-items-editor-row">
+          <label for="${safeId}">${escapeHtml(name)}</label>
+          <input type="number" min="0"${stepAttr} id="${safeId}" data-name="${escapeHtml(name)}" data-domain="${domain}" value="${val}">
+        </div>`;
+      }).join('');
+      html += `</div>`;
+    }
+    $('orderItemsEditor').innerHTML = html;
+
+    document.querySelectorAll('#orderItemsEditor .order-domain-tab').forEach(tab => {
+      tab.addEventListener('click', ()=>{
+        const dom = tab.dataset.odomain;
+        document.querySelectorAll('#orderItemsEditor .order-domain-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('#orderItemsEditor .order-domain-group').forEach(g => {
+          g.style.display = g.classList.contains('order-domain-' + dom) ? '' : 'none';
+        });
+      });
+    });
+  }
+
+  function collectOrderItemsFromEditor(){
+    const items = [];
+    const couleurQ = $('orderQuincaillerieCouleurInput').value;
+    document.querySelectorAll('#orderItemsEditor input[type="number"]').forEach(inp => {
+      let qty = parseFloat(inp.value);
+      if(qty && qty > 0){
+        if(inp.dataset.domain === 'lames'){
+          qty = Math.ceil(qty);
+          items.push({ name: inp.dataset.name, qty });
+        } else if(couleurQ === 'Laquée'){
+          items.push({ name: inp.dataset.name + ' (Laquée lames)', qty, tracked: false });
+        } else {
+          const name = couleurQ ? withColor(inp.dataset.name, couleurQ) : inp.dataset.name;
+          items.push({ name, qty });
+        }
+      }
+    });
+    return items;
+  }
+
+  function hasQuincaillerieValues(){
+    let has = false;
+    document.querySelectorAll('#orderItemsEditor input[type="number"]').forEach(inp => {
+      if(inp.dataset.domain !== 'lames' && parseFloat(inp.value) > 0){ has = true; }
+    });
+    return has;
+  }
+
+  function openOrderForm(prefill){
+    editingOrderId = null;
+    $('orderFormTitle').textContent = prefill ? 'Vérifier le dossier importé' : 'Nouvelle commande client';
+    $('orderClientInput').value = prefill ? (prefill.client || '') : '';
+    $('orderRefInput').value = prefill ? (prefill.ref || '') : '';
+    $('orderSemaineInput').value = prefill ? (prefill.semaine || '') : '';
+    $('orderCouleurInput').value = prefill ? (prefill.couleur || '') : '';
+    $('orderQuincaillerieCouleurInput').value = prefill ? (prefill.couleurQuincaillerie || '') : '';
+    renderOrderItemsEditor(prefill ? prefill.items : []);
+    const warns = (prefill && prefill.warnings) ? prefill.warnings : [];
+    $('orderImportWarnings').innerHTML = warns.length ? '<strong>À vérifier :</strong><ul>' + warns.map(w => '<li>' + escapeHtml(w) + '</li>').join('') + '</ul>' : '';
+    $('orderImportWarnings').classList.toggle('hidden', !warns.length);
+    $('orderFormPanel').classList.remove('hidden');
+    $('orderFormPanel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+
+  // --- Parseur de fiche de contrôle (.ods / .xlsx) ---
+  function cellStr(v){ return (v === null || v === undefined) ? '' : String(v).trim(); }
+
+  // Finition de la quincaillerie : ligne "NOIR | BLANC | LAQUE" de la fiche.
+  // Chaque marque (X, x, ✓, oui…) est rattachée au libellé situé à sa gauche (= sa case).
+  // Une marque placée à la place d'un libellé est rattachée au libellé manquant.
+  // Si aucune case ou plusieurs cases sont cochées, on ne devine pas : la couleur reste à choisir.
+  const FINISH_LABELS = [
+    { re:/^NOIRE?S?/, val:'Noir' },
+    { re:/^BLANC(HE)?S?/, val:'Blanc' },
+    { re:/^LAQU[EÉ]E?S?/, val:'Laquée' }
+  ];
+  function detectQuincaillerieCouleur(rows){
+    for(let r = 0; r < Math.min(rows.length, 25); r++){
+      const row = rows[r] || [];
+      const labels = [];
+      const marks = [];
+      for(let c = 0; c < row.length; c++){
+        const t = cellStr(row[c]).toUpperCase();
+        if(!t) continue;
+        const L = FINISH_LABELS.find(l => l.re.test(t));
+        if(L){
+          const rest = t.replace(L.re, '').trim();
+          labels.push({ c, val: L.val });
+          if(rest) marks.push({ c, inLabel: L.val });
+        } else {
+          marks.push({ c });
+        }
+      }
+      if(labels.length < 2) continue;
+      const missing = FINISH_LABELS.map(l => l.val).filter(v => !labels.some(l => l.val === v));
+      const checked = new Set();
+      const order = FINISH_LABELS.map(l => l.val);
+      for(const m of marks){
+        if(m.inLabel){ checked.add(m.inLabel); continue; }
+        const left = labels.filter(l => l.c < m.c).pop();
+        const right = labels.find(l => l.c > m.c);
+        // Case normale : marque dans les 2 colonnes à droite d'un libellé
+        if(left && m.c - left.c <= 2){ checked.add(left.val); continue; }
+        // Marque écrite à la place d'un libellé manquant (ex. "X" à la place de "LAQUE")
+        const lo = left ? order.indexOf(left.val) : -1;
+        const hi = right ? order.indexOf(right.val) : order.length;
+        const candidate = missing.find(v => order.indexOf(v) > lo && order.indexOf(v) < hi);
+        if(candidate){ checked.add(candidate); continue; }
+        if(left) checked.add(left.val);
+      }
+      const list = [...checked];
+      if(list.length === 1) return { couleur: list[0], note: '' };
+      if(list.length === 0) return { couleur: '', note: 'Aucune case Noir / Blanc / Laqué cochée sur la fiche : choisissez la couleur de quincaillerie.' };
+      return { couleur: '', note: 'Plusieurs cases de finition cochées sur la fiche (' + list.join(', ') + ') : choisissez la bonne couleur de quincaillerie.' };
+    }
+    return { couleur: '', note: 'Ligne Noir / Blanc / Laqué introuvable sur la fiche : choisissez la couleur de quincaillerie.' };
+  }
+
+
+  function parseFicheDeControle(rows){
+    // En-tête : recherche par libellé, avec repli sur position fixe
+    let client = '', ref = '', couleur = '';
+    for(let r = 0; r < Math.min(rows.length, 16); r++){
+      const row = rows[r] || [];
+      for(let c = 0; c < row.length; c++){
+        const label = cellStr(row[c]).toUpperCase();
+        if(label === 'CLIENT'){ client = cellStr(row[c+1]) || cellStr(row[c+2]); }
+        if(label === 'REF' || label === 'RÉF'){ ref = cellStr(row[c+1]) || cellStr(row[c+2]); }
+        if(label === 'COULEUR'){ couleur = cellStr(row[c+1]) || cellStr(row[c+2]); }
+      }
+    }
+    if(!client && !ref){
+      // repli : position habituelle (ligne ~11, colonnes 1-2 / 4-5 / 7-8 en index 0)
+      for(let r = 8; r < Math.min(rows.length, 14); r++){
+        const row = rows[r] || [];
+        const c1 = cellStr(row[1]), c2 = cellStr(row[2]);
+        const c4 = cellStr(row[4]), c5 = cellStr(row[5]);
+        const c7 = cellStr(row[7]), c8 = cellStr(row[8]);
+        if((c1 || c2) && (c4 || c5)){
+          client = [c1,c2].filter(v=>v && v.toUpperCase()!=='CLIENT').join(' ');
+          ref = [c4,c5].filter(v=>v && v.toUpperCase()!=='REF').join(' ');
+          couleur = [c7,c8].filter(v=>v && v.toUpperCase()!=='COULEUR').join(' ');
+          break;
+        }
+      }
+    }
+
+    const finition = detectQuincaillerieCouleur(rows);
+    const couleurQuincaillerie = finition.couleur;
+    const warnings = [];
+    if(finition.note) warnings.push(finition.note);
+
+    // Ligne d'en-tête PENTURE / Contre penture / GONDS / QUINCAILLERIE.
+    // Les colonnes sont repérées sur cette ligne (elles ont bougé entre l'ancienne et la nouvelle fiche).
+    let headerRow = -1;
+    for(let r = 0; r < rows.length; r++){
+      if(cellStr((rows[r]||[])[0]).toUpperCase() === 'PENTURE'){ headerRow = r; break; }
+    }
+    const items = [];
+    const unknown = [];
+    const num = (v) => { const n = parseFloat(String(v === null || v === undefined ? '' : v).replace(',', '.')); return isNaN(n) ? 0 : n; };
+    const addItem = (candidates, qty, label) => {
+      if(!(qty > 0)) return;
+      for(const cand of candidates){
+        const name = resolveCatalogName(cand);
+        if(name){
+          const existing = items.find(i => i.name === name);
+          if(existing) existing.qty += qty; else items.push({ name, qty });
+          return;
+        }
+      }
+      unknown.push(label + ' : ' + qty);
+    };
+
+    if(headerRow > -1){
+      const header = rows[headerRow] || [];
+      let contreCol = -1, gondsCol = -1, quincCol = -1;
+      header.forEach((v, c) => {
+        const u = cellStr(v).toUpperCase();
+        if(u.startsWith('CONTRE PENTURE')) contreCol = c;
+        if(u === 'GONDS') gondsCol = c;
+        if(u === 'QUINCAILLERIE') quincCol = c;
+      });
+      if(gondsCol < 0) gondsCol = 4;
+      if(quincCol < 0) quincCol = 7;
+
+      let afterArret = false;
+      for(let r = headerRow + 1; r < rows.length; r++){
+        const row = rows[r] || [];
+        // Bloc Penture (colonne A) : quantité penture en B, contre-penture dans la colonne "Contre penture"
+        const nameA = cellStr(row[0]).replace(/\s+/g, ' ');
+        if(nameA.toUpperCase() === 'ARRET'){
+          afterArret = true;
+          addItem(['ARRET court'], num(row[1]), 'ARRET court');
+          addItem(['ARRET long'], num(row[2]), 'ARRET long');
+        } else if(nameA){
+          if(afterArret){
+            // Sous ARRET : colonne B = court, colonne C = long
+            addItem([nameA + ' court', nameA], num(row[1]), nameA + ' (court)');
+            addItem([nameA + ' long'], num(row[2]), nameA + ' (long)');
+          } else {
+            addItem([nameA], num(row[1]), nameA);
+            if(contreCol > -1){
+              const canon = resolveCatalogName(nameA);
+              const contre = canon ? PENTURE_TO_CONTRE[canon] : null;
+              addItem(contre ? [contre] : [], num(row[contreCol]), 'Contre penture ' + nameA);
+            }
+          }
+        }
+        // Bloc Gonds + Vis : libellé puis quantité juste à droite
+        const nameB = cellStr(row[gondsCol]).replace(/\s+/g, ' ');
+        if(nameB && !['GONDS','VIS'].includes(nameB.toUpperCase())){
+          addItem([nameB], num(row[gondsCol + 1]), nameB);
+        }
+        // Bloc Quincaillerie : libellé sur 2 colonnes fusionnées, quantité dans la colonne suivante
+        const nameC = cellStr(row[quincCol]).replace(/\s+/g, ' ');
+        if(nameC && nameC.toUpperCase() !== 'QUINCAILLERIE'){
+          const q = num(row[quincCol + 2]) || num(row[quincCol + 1]);
+          addItem([nameC], q, nameC);
+        }
+      }
+    } else {
+      warnings.push('Tableau PENTURE / GONDS / QUINCAILLERIE introuvable : saisissez la quincaillerie manuellement.');
+    }
+    if(unknown.length){
+      warnings.push('Lignes de la fiche non reconnues dans le catalogue (non importées, à saisir ou ajouter au stock) : ' + unknown.join(' ; '));
+    }
+    return { client, ref, couleur, couleurQuincaillerie, items, warnings };
+  }
+
+  // --- Lecture de la feuille cachée "Débit (interne)" (besoins en lames) ---
+  const DEBIT_PROFILE_KEYS = ['lame_90x25','lame_100x25','lame_50x15','lame_70x19','lame_100x10'];
+  const DEBIT_PROFILE_LABELS = ['lame 90x25','barre','couvre joint','écharpe','TGF2'];
+  const DEBIT_NAME_PREFIX = { lame_90x25:'LAME 90X25', lame_100x25:'LAME 100X25', lame_50x15:'LAME 50X15', lame_70x19:'LAME 70X19', lame_100x10:'LAME 100X10' };
+
+  function splitDebitValue(line){
+    const idx = line.indexOf(' : ');
+    if(idx === -1) return '';
+    return line.slice(idx + 3).trim();
+  }
+
+  const DEBIT_SHEET_NAMES = ['Débit (interne)', 'Débit'];
+
+  function parseDebitInterne(wb){
+    let ws = null;
+    for(const name of DEBIT_SHEET_NAMES){
+      if(wb.Sheets[name]){ ws = wb.Sheets[name]; break; }
+    }
+    if(!ws) return null;
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
+    const lines = [];
+    for(let i = 0; i < 6; i++){
+      const cell = rows[i] ? rows[i][0] : null;
+      lines.push(cell === null || cell === undefined ? '' : String(cell));
+    }
+    const couleur = splitDebitValue(lines[0]);
+    const needs = {};
+    const missing = [];
+    for(let i = 0; i < 5; i++){
+      const raw = splitDebitValue(lines[i + 1]);
+      const key = DEBIT_PROFILE_KEYS[i];
+      if(!raw || raw.trim().toLowerCase().startsWith('non trouv')){
+        needs[key] = null;
+        missing.push(DEBIT_PROFILE_LABELS[i]);
+      } else {
+        const num = parseFloat(raw.replace(',', '.'));
+        needs[key] = isNaN(num) ? null : num;
+        if(isNaN(num)) missing.push(DEBIT_PROFILE_LABELS[i]);
+      }
+    }
+    return { couleur, needs, missing };
+  }
+
+  // --- Format "feuille de fabrication" (ex. ICM SINETYC) : feuille "mesures" + large feuille "Débit" ---
+  function findValueRightOf(row, fromCol){
+    for(let c = fromCol; c < row.length; c++){
+      const v = row[c];
+      if(v !== null && v !== undefined && String(v).trim() !== ''){ return v; }
+    }
+    return null;
+  }
+
+  function parseFabricationHeader(wb){
+    const ws = wb.Sheets['mesures'];
+    if(!ws) return null;
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
+    let ref = '', client = '', couleur = '';
+    for(let r = 0; r < Math.min(rows.length, 10); r++){
+      const row = rows[r] || [];
+      for(let c = 0; c < row.length; c++){
+        const label = cellStr(row[c]).toUpperCase();
+        if(label === 'COMMANDE'){ const v = findValueRightOf(row, c+1); if(v !== null) ref = cellStr(v); }
+        if(label === 'CLIENT'){ const v = findValueRightOf(row, c+1); if(v !== null) client = cellStr(v); }
+        if(label === 'COULEUR'){
+          const code = findValueRightOf(row, c+1);
+          const nameIdx = row.findIndex((v,i)=> i>c && v !== null && String(v).trim() !== '');
+          const name = nameIdx > -1 ? findValueRightOf(row, nameIdx+1) : null;
+          couleur = [code, name].filter(v=>v!==null).map(cellStr).join(' ');
+        }
+      }
+    }
+    return { ref, client, couleur };
+  }
+
+  const DEBIT_FAB_PATTERNS = [
+    { key:'lame_90x25', match:['besoin en lame 90x25'] },
+    { key:'lame_100x25', match:['besoin en barre'] },
+    { key:'lame_70x19', match:['besoin en echarpe','besoin en écharpe'] },
+    { key:'lame_50x15', match:['besoin en couvre joint'] },
+    { key:'lame_100x10', match:['besoin en tgf2','besoin en tgf'] }
+  ];
+
+  function parseDebitFabrication(wb){
+    const ws = wb.Sheets['Débit'] || wb.Sheets['Débit (interne)'];
+    if(!ws) return null;
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
+    const needs = {};
+    const missing = [];
+    for(const p of DEBIT_FAB_PATTERNS){
+      let found = false;
+      for(let r = 0; r < rows.length && !found; r++){
+        const row = rows[r] || [];
+        for(let c = 0; c < row.length; c++){
+          const cell = cellStr(row[c]).toLowerCase();
+          if(p.match.some(m => cell.includes(m))){
+            const raw = findValueRightOf(row, c+1);
+            const num = parseFloat(cellStr(raw).replace(',', '.'));
+            needs[p.key] = isNaN(num) ? null : num;
+            if(isNaN(num)) missing.push(p.key);
+            found = true;
+            break;
+          }
+        }
+      }
+      if(!found){ needs[p.key] = null; missing.push(p.key); }
+    }
+    return { needs, missing };
+  }
+
+  // --- Dossier de fabrication unifié (format de référence depuis octobre 2026) ---
+  // Un seul classeur par commande : mesures, Fiche atelier, Débit, Etiquettes, Quincaillerie,
+  // Fiche de contrôle, Débit (interne), Calcul, Paramètres, Calcul quinc.
+  //  - En-tête (commande, client, couleur, couleur quincaillerie) : feuille "mesures"
+  //  - Quincaillerie : ligne TOTAL de la feuille "Quincaillerie" (colonnes nommées en ligne "Repère"),
+  //    repli sur la feuille "Fiche de contrôle" si besoin
+  //  - Lames : feuille cachée "Débit (interne)" (inchangée)
+  function isDossierUnifie(wb){
+    return !!(wb.Sheets['mesures'] && wb.Sheets['Débit (interne)'] && (wb.Sheets['Quincaillerie'] || wb.Sheets['Fiche de contrôle']));
+  }
+
+  function sheetRows(wb, name){
+    const ws = wb.Sheets[name];
+    return ws ? XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true }) : null;
+  }
+
+  // Valeur "vide" d'une formule : "", 0 ou "0"
+  function cellText(v){
+    const t = cellStr(v);
+    return (t === '0') ? '' : t;
+  }
+
+  function parseUnifieHeader(wb){
+    const rows = sheetRows(wb, 'mesures') || [];
+    let ref = '', client = '', couleur = '', finitionBrute = '';
+    for(let r = 0; r < Math.min(rows.length, 10); r++){
+      const row = rows[r] || [];
+      for(let c = 0; c < row.length; c++){
+        const label = cellStr(row[c]).toUpperCase();
+        if(label === 'COMMANDE'){ const v = findValueRightOf(row, c+1); if(v !== null) ref = cellText(v); }
+        if(label === 'CLIENT'){ const v = findValueRightOf(row, c+1); if(v !== null) client = cellText(v); }
+        if(label === 'COULEUR' && !couleur){
+          // code couleur puis nom (ex. 011 | Marron foncé) ; on s'arrête au libellé suivant
+          const parts = [];
+          for(let k = c+1; k < row.length && parts.length < 2; k++){
+            const t = cellText(row[k]);
+            if(!t) continue;
+            if(t.toUpperCase().startsWith('COULEUR')) break;
+            parts.push(t);
+          }
+          couleur = parts.join(' ');
+        }
+        if(label === 'COULEUR QUINCAILLERIE'){ const v = findValueRightOf(row, c+1); if(v !== null) finitionBrute = cellText(v); }
+      }
+    }
+    return { ref, client, couleur, finitionBrute };
+  }
+
+  // "Noir" / "Blanc" / "Couleur" (= quincaillerie laquée couleur des lames)
+  function finitionFromMesures(v){
+    const t = String(v || '').trim().toLowerCase();
+    if(!t) return '';
+    if(t.startsWith('noir')) return 'Noir';
+    if(t.startsWith('blanc')) return 'Blanc';
+    return 'Laquée';
+  }
+
+  // Colonnes du dossier qui ne correspondent à aucune pièce existante : ignorées
+  // (signalées seulement si une quantité y apparaît malgré tout)
+  const UNIFIED_IGNORED = {
+    'marseillais alu long': "le Marseillais alu n'existe qu'en court",
+    'contre atlantic': "il n'existe pas de contre-penture Atlantic"
+  };
+
+  // Libellé de colonne de la feuille Quincaillerie → nom du catalogue de stock
+  function unifiedLabelToCatalog(label){
+    let l = String(label || '').trim().replace(/\s+/g, ' ').replace(/\s*\(mm\)\s*$/i, '');
+    const contre = l.match(/^Contre (.+)$/i);
+    if(contre){
+      const pent = resolveCatalogName(contre[1]);
+      if(pent && PENTURE_TO_CONTRE[pent]) return resolveCatalogName(PENTURE_TO_CONTRE[pent]);
+      return resolveCatalogName('CONTRE PENTURE ' + contre[1]);
+    }
+    return resolveCatalogName(l) || (/ court$/i.test(l) ? resolveCatalogName(l.replace(/ court$/i, '')) : null);
+  }
+
+  function parseUnifieQuincaillerie(wb, warnings){
+    const rows = sheetRows(wb, 'Quincaillerie');
+    if(!rows) return null;
+    let headerRow = -1, totalRow = -1;
+    rows.forEach((row, r) => {
+      const a = cellStr((row || [])[0]).toUpperCase();
+      if(a === 'REPÈRE' || a === 'REPERE') headerRow = r;
+      if(a === 'TOTAL' && totalRow === -1) totalRow = r;
+    });
+    if(headerRow === -1 || totalRow === -1) return null;
+    const header = rows[headerRow] || [];
+    const total = rows[totalRow] || [];
+    const num = (v) => { const n = parseFloat(String(v === null || v === undefined ? '' : v).replace(',', '.')); return isNaN(n) ? 0 : n; };
+    const items = [], unknown = [];
+    let alertCol = -1, tigeMm = 0, tigeManualMm = 0;
+    const manualRow = rows.findIndex(row => /^ajouts? manuels?/i.test(cellStr((row || [])[0])));
+    for(let c = 1; c < header.length; c++){
+      const label = cellStr(header[c]);
+      if(!label) continue;
+      if(label.toUpperCase().startsWith('ALERTE')){ alertCol = c; break; }
+      const qty = num(total[c]);
+      if(!(qty > 0)) continue;
+      const ignoredWhy = UNIFIED_IGNORED[normName(label)];
+      if(ignoredWhy){ warnings.push(`${label} : ${qty} dans le dossier, ignoré (${ignoredWhy}).`); continue; }
+      if(/espagnolette/i.test(label) && /\(mm\)/i.test(label)){
+        // Longueur totale de tige en mm : convertie plus loin en nombre de tiges (débit)
+        tigeMm += qty;
+        if(manualRow > -1) tigeManualMm += num((rows[manualRow] || [])[c]);
+        continue;
+      }
+      const name = unifiedLabelToCatalog(label);
+      if(!name){ unknown.push(label + ' : ' + qty); continue; }
+      const ex = items.find(i => i.name === name);
+      if(ex) ex.qty += qty; else items.push({ name, qty });
+    }
+    if(unknown.length){
+      warnings.push('Colonnes de quincaillerie sans référence de stock correspondante (non importées) : ' + unknown.join(' ; '));
+    }
+    // Alertes par volet (colonne "Alertes quincaillerie") et contrôles en bas de feuille
+    const alerts = new Set();
+    if(alertCol > -1){
+      for(let r = headerRow + 1; r < totalRow; r++){
+        const t = cellText((rows[r] || [])[alertCol]);
+        if(t) alerts.add(t);
+      }
+    }
+    let sansFourniture = false;
+    for(let r = totalRow + 1; r < rows.length; r++){
+      const row = rows[r] || [];
+      const label = cellStr(row[0]);
+      const val = cellText(row[1]);
+      if(!label || !val) continue;
+      if(/sans fourniture/i.test(label)){ if(/^oui/i.test(val)) sansFourniture = true; continue; }
+      if(/^(erreur|attention)/i.test(val)) alerts.add(label + ' : ' + val);
+    }
+    alerts.forEach(a => warnings.push('Alerte du dossier — ' + a));
+    return { items, sansFourniture, tigeMm, tigeManualMm };
+  }
+
+  // ---------- Débit des tiges d'espagnolette ----------
+  // Longueurs unitaires : feuille "Calcul", colonne "Tige espagnolette" (une ligne par volet)
+  // Nombre de tiges : feuille "Calcul quinc", colonne "Kits espagnolette" (mêmes lignes)
+  function readTigePieces(wb){
+    const ca = sheetRows(wb, 'Calcul'), cq = sheetRows(wb, 'Calcul quinc');
+    if(!ca || !cq) return null;
+    const findCol = (rows, re) => {
+      for(let r = 0; r < Math.min(rows.length, 30); r++){
+        const row = rows[r] || [];
+        for(let c = 0; c < row.length; c++){ if(re.test(cellStr(row[c]))) return { r, c }; }
+      }
+      return null;
+    };
+    const L = findCol(ca, /^tige espagnolette$/i);
+    const K = findCol(cq, /^kits? espagnolette$/i);
+    if(!L || !K) return null;
+    const num = (v) => { const n = parseFloat(String(v === null || v === undefined ? '' : v).replace(',', '.')); return isNaN(n) ? 0 : n; };
+    const pieces = [], detail = [];
+    for(let k = 1; k <= 15; k++){
+      const len = Math.round(num((ca[L.r + k] || [])[L.c]));
+      const n = Math.round(num((cq[K.r + k] || [])[K.c]));
+      if(len > 0 && n > 0){
+        const volet = cellStr((ca[L.r + k] || [])[0]) || String.fromCharCode(64 + k);
+        detail.push({ volet, len, n });
+        for(let i = 0; i < n; i++) pieces.push(len);
+      }
+    }
+    return { pieces, detail };
+  }
+
+  // Débit "premier ajustement décroissant" : on place chaque pièce, de la plus longue à la plus courte,
+  // dans la première tige où elle tient. Chaque coupe consomme un trait de scie ; chaque tige perd sa chute non exploitable.
+  function planTigeCut(pieces, st){
+    const usable = st.longueur - st.chute;
+    const bars = [], tooLong = [];
+    for(const len of pieces.slice().sort((a,b)=> b - a)){
+      if(len > usable){ tooLong.push(len); continue; }
+      const need = len + st.trait;
+      let bar = bars.find(b => b.rest >= need);
+      if(!bar){ bar = { rest: usable, pieces: [] }; bars.push(bar); }
+      bar.rest -= need; bar.pieces.push(len);
+    }
+    // Si le premier ajustement n'atteint pas le minimum théorique, recherche d'un débit avec moins de tiges
+    const fit = pieces.filter(l => l <= usable).sort((a,b)=> b - a);
+    const lower = Math.ceil(fit.reduce((a,l)=> a + l + st.trait, 0) / usable);
+    if(bars.length > lower && fit.length <= 60){
+      const better = searchTigeCut(fit, usable, st.trait, bars.length);
+      if(better) return { nb: better.length + tooLong.length, bars: better, tooLong, usable };
+    }
+    return { nb: bars.length + tooLong.length, bars, tooLong, usable };
+  }
+
+  // Recherche exhaustive bornée (limite de calcul) d'un débit utilisant strictement moins de tiges que "limit"
+  function searchTigeCut(sorted, usable, trait, limit){
+    const need = sorted.map(l => l + trait);
+    const suffix = need.map((_, i) => need.slice(i).reduce((a,b)=> a + b, 0));
+    let best = null, nodes = 0;
+    const bins = [];
+    const dfs = (i) => {
+      if(++nodes > 300000) return;
+      const cap = best ? best.length : limit;
+      if(bins.length >= cap) return;
+      if(i === need.length){ best = bins.map(b => ({ rest: b.rest, pieces: b.pieces.slice() })); return; }
+      const free = bins.reduce((a,b)=> a + b.rest, 0);
+      if(bins.length + Math.max(0, Math.ceil((suffix[i] - free) / usable)) >= cap) return;
+      const tried = new Set();
+      for(const b of bins){
+        if(b.rest >= need[i] && !tried.has(b.rest)){
+          tried.add(b.rest);
+          b.rest -= need[i]; b.pieces.push(sorted[i]);
+          dfs(i + 1);
+          b.pieces.pop(); b.rest += need[i];
+        }
+      }
+      bins.push({ rest: usable - need[i], pieces: [sorted[i]] });
+      dfs(i + 1);
+      bins.pop();
+    };
+    dfs(0);
+    return best;
+  }
+
+  function tigeDebitFromDossier(wb, tigeMm, tigeManualMm, warnings){
+    const st = tigeSettings;
+    const read = readTigePieces(wb);
+    let pieces = read ? read.pieces.slice() : null;
+    const fromVolets = pieces ? pieces.reduce((a,b)=> a + b, 0) : 0;
+    if(pieces && tigeManualMm > 0) pieces.push(Math.round(tigeManualMm));
+    const coherent = pieces && Math.abs(fromVolets + tigeManualMm - tigeMm) < 1;
+    if(!coherent){
+      const nb = Math.ceil(tigeMm / Math.max(1, (st.longueur - st.chute)));
+      warnings.push(`Tige espagnolette : ${tigeMm} mm au total, détail par volet illisible. Estimation ${nb} tige${nb>1?'s':''} de ${st.longueur} mm (sans optimisation du débit) — à vérifier.`);
+      return nb;
+    }
+    const plan = planTigeCut(pieces, st);
+    const summary = read.detail.map(d => `${d.n} × ${d.len}`).join(' + ') + (tigeManualMm > 0 ? ` + ajout manuel ${Math.round(tigeManualMm)}` : '');
+    const barsTxt = plan.bars.map((b,i) => `tige ${i+1} : ${b.pieces.join(' + ')} (reste ${Math.round(b.rest)})`).join(' ; ');
+    warnings.push(`Tige espagnolette : ${pieces.length} pièce${pieces.length>1?'s':''} (${summary} mm) → ${plan.nb} tige${plan.nb>1?'s':''} de ${st.longueur} mm, avec ${st.chute} mm de chute non exploitable par tige et ${st.trait} mm de trait de scie. Débit : ${barsTxt}.`);
+    if(plan.tooLong.length){
+      warnings.push(`Tige espagnolette : pièce${plan.tooLong.length>1?'s':''} de ${plan.tooLong.join(', ')} mm plus longue${plan.tooLong.length>1?'s':''} que la longueur utile d'une tige (${plan.usable} mm) — comptée${plan.tooLong.length>1?'s':''} une tige chacune, à vérifier.`);
+    }
+    return plan.nb;
+  }
+
+  function parseDossierUnifie(wb){
+    const head = parseUnifieHeader(wb);
+    const warnings = [];
+    let items = [];
+    let couleurQuincaillerie = finitionFromMesures(head.finitionBrute);
+    let source = 'Quincaillerie';
+    let q = parseUnifieQuincaillerie(wb, warnings);
+    const ficheRows = sheetRows(wb, 'Fiche de contrôle');
+    if(!q && ficheRows){
+      // Repli : lecture de la Fiche de contrôle intégrée au dossier
+      source = 'Fiche de contrôle';
+      const f = parseFicheDeControle(ficheRows);
+      const sans = ficheRows.slice(0, 12).some(r => (r || []).some(v => /SANS FOURNITURE DE QUINCAILLERIE/i.test(cellStr(v))));
+      // Sur la fiche de contrôle, la tige est en mm : on la sort pour la convertir en tiges
+      const tigeItem = f.items.find(i => normName(i.name) === 'tige espagnolette');
+      const fItems = f.items.filter(i => i !== tigeItem);
+      q = { items: fItems, sansFourniture: sans, tigeMm: tigeItem ? tigeItem.qty : 0, tigeManualMm: 0 };
+      (f.warnings || []).filter(w => !/case Noir|finition|Noir \/ Blanc/i.test(w)).forEach(w => warnings.push(w));
+      if(!couleurQuincaillerie) couleurQuincaillerie = f.couleurQuincaillerie;
+    }
+    if(q){
+      if(q.sansFourniture){
+        warnings.unshift('Client sans fourniture de quincaillerie : aucun besoin en quincaillerie importé.');
+        couleurQuincaillerie = '';
+      } else {
+        items = q.items;
+        if(q.tigeMm > 0){
+          const nb = tigeDebitFromDossier(wb, q.tigeMm, q.tigeManualMm || 0, warnings);
+          const tigeName = resolveCatalogName('Tige Espagnolette') || 'Tige Espagnolette';
+          if(nb > 0) items.push({ name: tigeName, qty: nb });
+        }
+        if(items.length && !couleurQuincaillerie){
+          warnings.unshift('Couleur quincaillerie (mesures, case Q4) non renseignée : choisissez Noir, Blanc ou Laquée.');
+        }
+        // Contrôle croisé avec les cases X de la fiche de contrôle
+        if(ficheRows && couleurQuincaillerie){
+          const fx = detectQuincaillerieCouleur(ficheRows).couleur;
+          if(fx && fx !== couleurQuincaillerie){
+            warnings.unshift(`Couleur quincaillerie incohérente : « ${couleurQuincaillerie} » dans mesures, « ${fx} » cochée sur la fiche de contrôle. Vérifiez.`);
+          }
+        }
+      }
+    } else {
+      warnings.push('Feuilles Quincaillerie et Fiche de contrôle illisibles : saisissez la quincaillerie manuellement.');
+    }
+    return { client: head.client, ref: head.ref, couleur: head.couleur, couleurQuincaillerie, items, warnings, source };
+  }
+
+  function handleFicheFile(file){
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try{
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type:'array' });
+        const isUnifie = isDossierUnifie(wb);
+        const isFabrication = !isUnifie && !!wb.Sheets['mesures'];
+
+        let parsed, debit;
+        if(isUnifie){
+          parsed = parseDossierUnifie(wb);
+          debit = parseDebitInterne(wb);
+        } else if(isFabrication){
+          const header = parseFabricationHeader(wb) || { ref:'', client:'', couleur:'' };
+          parsed = { client: header.client, ref: header.ref, couleur: header.couleur, items: [] };
+          debit = parseDebitFabrication(wb);
+        } else {
+          const ws = wb.Sheets['Fiche de contrôle'] || wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
+          parsed = parseFicheDeControle(rows);
+          debit = parseDebitInterne(wb);
+        }
+
+        const weekMatch = file.name.match(/(?:^|[^A-Za-z])S\s?-?\s?(\d{1,2})(?!\d)/i);
+        parsed.semaine = weekMatch ? ('S' + weekMatch[1]) : '';
+
+        let warning = '';
+        if(!debit){
+          warning = 'Information de besoin en lames introuvable — complétez manuellement.';
+        } else {
+          const colorSource = debit.couleur || parsed.couleur || '';
+          const code = normalizeLameCode(colorSource.trim().split(/\s+/)[0] || '');
+          if(code){
+            for(const key of DEBIT_PROFILE_KEYS){
+              const qty = debit.needs[key];
+              if(qty !== null && qty > 0){
+                parsed.items.push({ name: DEBIT_NAME_PREFIX[key] + ' ' + code, qty: Math.ceil(qty) });
+              }
+            }
+          }
+          if(debit.missing.length){
+            const labels = debit.missing.map(m => DEBIT_PROFILE_LABELS[DEBIT_PROFILE_KEYS.indexOf(m)] || m);
+            warning = 'À vérifier manuellement : ' + labels.join(', ');
+          }
+        }
+
+        parsed.warnings = parsed.warnings || [];
+        if(warning) parsed.warnings.push(warning);
+        openOrderForm(parsed);
+        toast(parsed.warnings.length ? 'Fiche lue — points à vérifier en haut du formulaire' : "Fiche lue — vérifiez les informations avant d'enregistrer");
+      }catch(err){
+        console.error(err);
+        toast('Impossible de lire ce fichier');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ===================== MISE À JOUR DU CATALOGUE (fiche de contrôle) =====================
+  // Principe : on ne supprime jamais une référence ni son stock.
+  //  - renommer = même document Firestore, même stock, même seuil, nouveau libellé ;
+  //  - si la cible existe déjà, le stock est ajouté à la cible et l'ancienne est archivée à 0 ;
+  //  - archiver = masquer, stock conservé, restaurable ;
+  //  - nouvelles références de la fiche = créées à 0 (ou restaurées si une archive porte ce nom).
+  let migrationApplying = false;
+  let migrationPlan = null;
+
+  function computeMigrationPlan(){
+    const idx = catalogIndex();
+    const quinc = activeStockItems().filter(it => (CATEGORY_DOMAIN[it.category] || 'quincaillerie') === 'quincaillerie');
+    const obsolete = {};
+    const uncolored = [];
+    const present = { Noir: new Set(), Blanc: new Set() };
+    for(const it of quinc){
+      const m = it.name.match(/^(.*)\((Noir|Blanc)\)\s*$/);
+      if(!m){ if(!it.offSheet) uncolored.push(it); continue; }
+      const base = m[1].trim(), color = m[2], nb = normName(base);
+      if(idx[nb]){ present[color].add(nb); continue; }
+      if(it.offSheet) continue;
+      (obsolete[nb] = obsolete[nb] || { key: nb, base, cat: it.category, items: {} }).items[color] = it;
+    }
+    const missing = [];
+    for(const nb of Object.keys(idx)){
+      for(const color of ['Noir','Blanc']){
+        if(!present[color].has(nb)) missing.push({ key: nb, name: idx[nb].name, cat: idx[nb].cat, color });
+      }
+    }
+    return { obsolete: Object.values(obsolete), uncolored, missing };
+  }
+
+  function migrationCount(plan){
+    const missingRefs = new Set(plan.missing.map(m => m.key)).size;
+    return plan.obsolete.length + plan.uncolored.length + missingRefs;
+  }
+
+  function renderMigrationBanner(){
+    const banner = $('migrationBanner');
+    if(!stockItems.length){ banner.classList.add('hidden'); return; }
+    const plan = computeMigrationPlan();
+    const n = migrationCount(plan);
+    if(!n){ banner.classList.add('hidden'); return; }
+    banner.innerHTML = `<span><strong>Le catalogue n'est pas aligné sur la fiche de contrôle</strong> : ${n} référence${n>1?'s':''} à vérifier (renommages, nouvelles pièces, pièces retirées). Votre stock compté sera conservé.</span>
+      <button class="btn-small btn-commande" id="openMigrationBtn">Mettre à jour le catalogue</button>`;
+    banner.classList.remove('hidden');
+  }
+
+  function stockOf(it){ return it ? it.stock : null; }
+  function fmtStock(v){ return v === null ? '—' : (v !== 0 ? `<b>${v}</b>` : '0'); }
+
+  function renderMigrationPanel(){
+    migrationPlan = computeMigrationPlan();
+    const plan = migrationPlan;
+    const idx = catalogIndex();
+    let html = '';
+
+    if(plan.obsolete.length){
+      html += `<div class="migration-section"><h3>Pièces qui ne figurent plus sur la fiche (${plan.obsolete.length})</h3>
+        <p class="hint">Choisissez pour chacune : la renommer vers la nouvelle pièce (le stock suit), l'archiver (stock conservé, restaurable) ou la garder hors fiche.</p>
+        <div class="migration-row" style="font-weight:700; font-size:11.5px; color:var(--ink-soft);"><span>Ancienne pièce</span><span>Stock noir / blanc</span><span>Action</span></div>`;
+      for(const g of plan.obsolete){
+        const sug = MIGRATION_SUGGESTIONS[g.key];
+        const def = sug && sug.preselect ? 'rename:' + sug.to : 'archive';
+        let opts = `<option value="archive"${def==='archive'?' selected':''}>Archiver (stock conservé)</option>
+                    <option value="keep">Garder telle quelle, hors fiche</option>`;
+        if(sug){ opts += `<option value="rename:${escapeHtml(sug.to)}"${def==='rename:'+sug.to?' selected':''}>Renommer en « ${escapeHtml(sug.to)} » (suggestion)</option>`; }
+        for(const c of Object.keys(CATALOG_SEED)){
+          opts += `<optgroup label="Renommer en… (${CATEGORY_LABELS[c]})">` +
+            CATALOG_SEED[c].filter(n => !sug || n !== sug.to).map(n => `<option value="rename:${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('') + '</optgroup>';
+        }
+        html += `<div class="migration-row">
+          <span>${escapeHtml(g.base)}</span>
+          <span class="stock-vals">${fmtStock(stockOf(g.items.Noir))} / ${fmtStock(stockOf(g.items.Blanc))}</span>
+          <select data-mig="obsolete" data-key="${escapeHtml(g.key)}">${opts}</select>
+        </div>`;
+      }
+      html += '</div>';
+    }
+
+    if(plan.uncolored.length){
+      html += `<div class="migration-section"><h3>Références sans couleur (${plan.uncolored.length})</h3>
+        <p class="hint">Souvent des pièces ajoutées depuis l'onglet « blanche » mais rangées par erreur en noir. Rattachez-les à la bonne couleur : si la pièce existe déjà dans cette couleur, les stocks sont additionnés.</p>`;
+      for(const it of plan.uncolored){
+        html += `<div class="migration-row">
+          <span>${escapeHtml(it.name)}</span>
+          <span class="stock-vals">Stock ${fmtStock(it.stock)}</span>
+          <select data-mig="uncolored" data-id="${it.id}">
+            <option value="skip">Ne rien faire pour l'instant</option>
+            <option value="Blanc">Rattacher à la quincaillerie blanche</option>
+            <option value="Noir">Rattacher à la quincaillerie noire</option>
+            <option value="keep">Garder telle quelle, hors fiche</option>
+            <option value="archive">Archiver (stock conservé)</option>
+          </select>
+        </div>`;
+      }
+      html += '</div>';
+    }
+
+    html += `<div class="migration-section"><h3>Nouvelles pièces de la fiche</h3>
+      <p class="hint">Créées à 0 (ou restaurées avec leur stock si elles avaient été archivées), sauf celles alimentées par un renommage ci-dessus.</p>
+      <div id="migrationNewList" class="migration-new"></div></div>`;
+
+    if(!plan.obsolete.length && !plan.uncolored.length && !plan.missing.length){
+      html = '<p style="font-size:13px; color:var(--ink-soft);">Le catalogue est déjà aligné sur la fiche de contrôle.</p>';
+    }
+    $('migrationContent').innerHTML = html;
+    renderMigrationNewList();
+  }
+
+  function readMigrationChoices(){
+    const renames = {}; // key -> target name | 'archive' | 'keep'
+    document.querySelectorAll('#migrationContent select[data-mig="obsolete"]').forEach(sel => { renames[sel.dataset.key] = sel.value; });
+    const uncolored = {};
+    document.querySelectorAll('#migrationContent select[data-mig="uncolored"]').forEach(sel => { uncolored[sel.dataset.id] = sel.value; });
+    return { renames, uncolored };
+  }
+
+  function migrationTargets(plan, choices){
+    // couples (nom normalisé, couleur) qui seront alimentés par un renommage / rattachement
+    const fed = new Set();
+    for(const g of plan.obsolete){
+      const v = choices.renames[g.key] || 'archive';
+      if(v.startsWith('rename:')){
+        for(const color of Object.keys(g.items)) fed.add(normName(v.slice(7)) + '|' + color);
+      }
+    }
+    for(const it of plan.uncolored){
+      const v = choices.uncolored[it.id];
+      if(v === 'Blanc' || v === 'Noir') fed.add(normName(stripColorSuffix(it.name)) + '|' + v);
+    }
+    return fed;
+  }
+
+  function renderMigrationNewList(){
+    const box = $('migrationNewList');
+    if(!box || !migrationPlan) return;
+    const fed = migrationTargets(migrationPlan, readMigrationChoices());
+    const byName = {};
+    for(const m of migrationPlan.missing){
+      if(fed.has(m.key + '|' + m.color)) continue;
+      (byName[m.name] = byName[m.name] || []).push(m.color);
+    }
+    const names = Object.keys(byName);
+    box.innerHTML = names.length
+      ? names.map(n => `${escapeHtml(n)} <span style="opacity:.75;">(${byName[n].length === 2 ? 'noir + blanc' : byName[n][0].toLowerCase()})</span>`).join('<br>')
+      : 'Aucune pièce à créer.';
+  }
+
+  async function logMovement(item, type, qty, note){
+    await addDoc(stockMovementsCol, { itemId: item.id, itemName: item.name, type, qty, note, by: currentUser, at: new Date().toISOString() });
+  }
+
+  // Déplace une référence vers un nouveau libellé sans jamais perdre de stock.
+  async function moveItemTo(item, newName, category){
+    const target = stockItems.find(it => !it.archived && it.id !== item.id && normName(it.name) === normName(newName));
+    if(target){
+      if(item.stock !== 0){
+        await updateDoc(doc(db,'stock_items', target.id), { stock: increment(item.stock) });
+        await logMovement(target, item.stock > 0 ? 'entree' : 'sortie', Math.abs(item.stock), 'Fusion depuis ' + item.name);
+      }
+      await updateDoc(doc(db,'stock_items', item.id), { archived: true, stock: 0, mergedInto: target.name, previousStock: item.stock });
+      await logMovement(item, 'fusion', Math.abs(item.stock), 'Stock transféré vers ' + target.name);
+    } else {
+      await updateDoc(doc(db,'stock_items', item.id), { name: newName, category, renamedFrom: item.name, archived: false });
+      await logMovement(item, 'renommage', 0, item.name + ' → ' + newName);
+    }
+  }
+
+  async function applyMigration(){
+    if(!requireUser()) return;
+    if(!migrationPlan) return;
+    const plan = migrationPlan;
+    const choices = readMigrationChoices();
+    const idx = catalogIndex();
+    const fed = migrationTargets(plan, choices);
+    const toCreate = plan.missing.filter(m => !fed.has(m.key + '|' + m.color));
+    const nRename = Object.values(choices.renames).filter(v => v.startsWith('rename:')).length;
+    const nArchive = Object.values(choices.renames).filter(v => v === 'archive').length + Object.values(choices.uncolored).filter(v => v === 'archive').length;
+    const nAttach = Object.values(choices.uncolored).filter(v => v === 'Blanc' || v === 'Noir').length;
+    if(!confirm(`Appliquer la mise à jour ?\n\n• ${nRename} pièce(s) renommée(s) (stock conservé)\n• ${nAttach} pièce(s) rattachée(s) à une couleur\n• ${nArchive} pièce(s) archivée(s) (stock conservé)\n• ${toCreate.length} référence(s) créée(s) ou restaurée(s)\n\nConseil : faites un export de sécurité avant si vous ne l'avez pas encore fait.`)) return;
+
+    migrationApplying = true;
+    $('applyMigrationBtn').disabled = true;
+    try{
+      for(const g of plan.obsolete){
+        const v = choices.renames[g.key] || 'archive';
+        for(const color of Object.keys(g.items)){
+          const it = g.items[color];
+          if(v.startsWith('rename:')){
+            const target = v.slice(7);
+            const cat = (idx[normName(target)] || {}).cat || it.category;
+            await moveItemTo(it, withColor(target, color), cat);
+          } else if(v === 'archive'){
+            await updateDoc(doc(db,'stock_items', it.id), { archived: true });
+          } else if(v === 'keep'){
+            await updateDoc(doc(db,'stock_items', it.id), { offSheet: true });
+          }
+        }
+      }
+      for(const it of plan.uncolored){
+        const v = choices.uncolored[it.id];
+        if(v === 'Blanc' || v === 'Noir'){
+          const base = stripColorSuffix(it.name);
+          const canon = resolveCatalogName(base) || base;
+          const cat = (idx[normName(canon)] || {}).cat || it.category;
+          await moveItemTo(it, withColor(canon, v), cat);
+        } else if(v === 'archive'){
+          await updateDoc(doc(db,'stock_items', it.id), { archived: true });
+        } else if(v === 'keep'){
+          await updateDoc(doc(db,'stock_items', it.id), { offSheet: true });
+        }
+      }
+      for(const m of toCreate){
+        const fullName = withColor(m.name, m.color);
+        const arch = stockItems.find(it => it.archived && normName(it.name) === normName(fullName));
+        if(arch){
+          await updateDoc(doc(db,'stock_items', arch.id), { archived: false, category: m.cat });
+        } else {
+          await addDoc(stockItemsCol, { name: fullName, category: m.cat, stock: 0, seuil: 0 });
+        }
+      }
+      toast('Catalogue mis à jour');
+      $('migrationPanel').classList.add('hidden');
+    }catch(e){
+      console.error(e);
+      toast('Erreur pendant la mise à jour — rouvrez le panneau pour reprendre');
+    }finally{
+      migrationApplying = false;
+      $('applyMigrationBtn').disabled = false;
+    }
+  }
+
+  // Export de sécurité du stock (CSV) avant la mise à jour
+  function exportStockCsv(){
+    const headers = ['Référence','Catégorie','Stock','Seuil','Archivée'];
+    const rows = stockItems.slice().sort((a,b)=> a.name.localeCompare(b.name))
+      .map(it => [it.name, CATEGORY_LABELS[it.category] || it.category, it.stock, typeof it.seuil === 'number' ? it.seuil : 0, it.archived ? 'oui' : '']);
+    const csvEscape = (v) => '"' + String(v).replace(/"/g,'""') + '"';
+    const csv = [headers, ...rows].map(r => r.map(csvEscape).join(';')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'revoba-stock-' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ===================== FIN MODULE STOCK =====================
+
+  // --- Event wiring ---
+
+  $('userSelect').addEventListener('change', (e)=>{
+    currentUser = e.target.value;
+    try{ localStorage.setItem('etabli-current-user', currentUser); }catch(err){}
+  });
+
+  $('newRequestBtn').addEventListener('click', ()=>{
+    $('newRequestForm').classList.remove('hidden');
+    $('itemInput').focus();
+  });
+  $('cancelRequestBtn').addEventListener('click', ()=>{
+    $('newRequestForm').classList.add('hidden');
+    $('itemInput').value=''; $('qtyInput').value=''; $('siteRefInput').value=''; $('refInput').value=''; $('supplierInput').value=''; $('commentInput').value='';
+  });
+  $('submitRequestBtn').addEventListener('click', async ()=>{
+    if(!requireUser()) return;
+    const item = $('itemInput').value.trim();
+    if(!item){ toast('Indiquez le nom du consommable'); return; }
+    const siteRef = $('siteRefInput').value;
+    if(!siteRef){
+      $('siteRefInput').classList.add('attention');
+      toast('Sélectionnez le chantier concerné');
+      setTimeout(()=> $('siteRefInput').classList.remove('attention'), 1600);
+      return;
+    }
+    const newReq = {
+      item,
+      quantity: $('qtyInput').value.trim(),
+      siteRef,
+      reference: $('refInput').value.trim(),
+      supplier: $('supplierInput').value.trim(),
+      comment: $('commentInput').value.trim(),
+      requestedBy: currentUser,
+      requestedAt: new Date().toISOString(),
+      status: STATUS.DEMANDE,
+      orderedBy:'', orderedAt:'', deliveryEta:'', deliveries:[]
+    };
+    await createRequestDoc(newReq);
+    $('itemInput').value=''; $('qtyInput').value=''; $('siteRefInput').value=''; $('refInput').value=''; $('supplierInput').value=''; $('commentInput').value='';
+    $('newRequestForm').classList.add('hidden');
+    toast('Besoin ajouté');
+  });
+
+  $('newDeliveryBtn').addEventListener('click', ()=>{
+    $('newDeliveryForm').classList.remove('hidden');
+    $('deliveryItemInput').focus();
+  });
+  $('cancelDeliveryFormBtn').addEventListener('click', ()=>{
+    $('newDeliveryForm').classList.add('hidden');
+    $('deliveryItemInput').value=''; $('deliverySiteInput').value=''; $('deliveryQtyInput').value='';
+    $('deliveryDirectSupplierInput').value=''; $('deliveryDirectReferenceInput').value=''; $('deliveryDirectCommentInput').value='';
+  });
+  $('submitDeliveryBtn').addEventListener('click', async ()=>{
+    if(!requireUser()) return;
+    const item = $('deliveryItemInput').value.trim();
+    if(!item){ toast('Indiquez le nom du consommable'); return; }
+    const siteRef = $('deliverySiteInput').value;
+    if(!siteRef){
+      $('deliverySiteInput').classList.add('attention');
+      toast('Sélectionnez le chantier concerné');
+      setTimeout(()=> $('deliverySiteInput').classList.remove('attention'), 1600);
+      return;
+    }
+    const newReq = {
+      item,
+      quantity: $('deliveryQtyInput').value.trim(),
+      siteRef,
+      reference: $('deliveryDirectReferenceInput').value.trim(),
+      supplier: $('deliveryDirectSupplierInput').value.trim(),
+      comment: '',
+      requestedBy: currentUser,
+      requestedAt: new Date().toISOString(),
+      status: STATUS.LIVRE,
+      orderedBy:'', orderedAt:'', deliveryEta:'',
+      deliveries: [{ type:'complete', comment: $('deliveryDirectCommentInput').value.trim(), by: currentUser, at: new Date().toISOString() }]
+    };
+    await createRequestDoc(newReq);
+    $('deliveryItemInput').value=''; $('deliverySiteInput').value=''; $('deliveryQtyInput').value='';
+    $('deliveryDirectSupplierInput').value=''; $('deliveryDirectReferenceInput').value=''; $('deliveryDirectCommentInput').value='';
+    $('newDeliveryForm').classList.add('hidden');
+    toast('Livraison enregistrée');
+  });
+
+  $('statsBar').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.stat-card');
+    if(!btn) return;
+    const clicked = btn.dataset.filter;
+    activeFilter = (activeFilter === clicked) ? 'all' : clicked;
+    renderCards();
+  });
+
+  $('searchInput').addEventListener('input', (e)=>{
+    searchTerm = e.target.value;
+    renderCards();
+  });
+
+  $('cardsList').addEventListener('input', (e)=>{
+    if(e.target && e.target.id){
+      drafts[e.target.id] = e.target.value;
+    }
+  });
+
+  $('cardsList').addEventListener('click', async (e)=>{
+    const btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+    const req = requests.find(r => r.id === id);
+
+    if(action === 'openCommande'){
+      if(!requireUser()) return;
+      delete drafts['commandeSupplierInput-'+id]; delete drafts['commandeCommentInput-'+id];
+      commandeFormOpenFor = id;
+      renderCards();
+    } else if(action === 'cancelCommande'){
+      delete drafts['commandeSupplierInput-'+id]; delete drafts['commandeCommentInput-'+id];
+      commandeFormOpenFor = null;
+      renderCards();
+    } else if(action === 'confirmCommande'){
+      if(!requireUser()) return;
+      const supplier = $('commandeSupplierInput-' + id).value.trim();
+      if(!supplier){
+        $('commandeSupplierInput-' + id).classList.add('attention');
+        toast('Indiquez le fournisseur');
+        setTimeout(()=> { const el = $('commandeSupplierInput-' + id); if(el) el.classList.remove('attention'); }, 1600);
+        return;
+      }
+      const comment = $('commandeCommentInput-' + id).value.trim();
+      commandeFormOpenFor = null;
+      delete drafts['commandeSupplierInput-'+id]; delete drafts['commandeCommentInput-'+id];
+      await updateRequestDoc(id, {
+        status: STATUS.COMMANDE, orderedBy: currentUser, orderedAt: new Date().toISOString(),
+        supplier, orderComment: comment
+      });
+      toast('Marqué comme commandé');
+    } else if(action === 'openDelivery'){
+      if(!requireUser()) return;
+      delete drafts['deliveryCommentInput-'+id];
+      deliveryFormOpenFor = id;
+      renderCards();
+    } else if(action === 'cancelDelivery'){
+      delete drafts['deliveryCommentInput-'+id];
+      deliveryFormOpenFor = null;
+      renderCards();
+    } else if(action === 'confirmDeliveryPartial'){
+      if(!requireUser()) return;
+      const comment = $('deliveryCommentInput-' + id).value.trim();
+      deliveryFormOpenFor = null;
+      delete drafts['deliveryCommentInput-'+id];
+      await updateRequestDoc(id, {
+        status: STATUS.ATTENTE,
+        deliveries: arrayUnion({ type:'partial', comment, by: currentUser, at: new Date().toISOString() })
+      });
+      toast('Livraison partielle enregistrée');
+    } else if(action === 'confirmDeliveryComplete'){
+      if(!requireUser()) return;
+      const comment = $('deliveryCommentInput-' + id).value.trim();
+      deliveryFormOpenFor = null;
+      delete drafts['deliveryCommentInput-'+id];
+      await updateRequestDoc(id, {
+        status: STATUS.LIVRE,
+        deliveries: arrayUnion({ type:'complete', comment, by: currentUser, at: new Date().toISOString() })
+      });
+      toast('Marqué comme livré');
+    } else if(action === 'revertStatus'){
+      if(!requireUser()) return;
+      const idx = STATUS_ORDER.indexOf(req.status);
+      if(idx > 0){
+        const prevStatus = STATUS_ORDER[idx - 1];
+        await updateRequestDoc(id, { status: prevStatus });
+        toast("Retour à l'étape précédente");
+      }
+    } else if(action === 'deleteRequest'){
+      if(confirm(`Supprimer définitivement "${req.item}" ? Cette action est irréversible.`)){
+        await deleteRequestDoc(id);
+        toast('Entrée supprimée');
+      }
+    } else if(action === 'openEta'){
+      delete drafts['etaInput-'+id];
+      etaFormOpenFor = id;
+      renderCards();
+    } else if(action === 'cancelEta'){
+      delete drafts['etaInput-'+id];
+      etaFormOpenFor = null;
+      renderCards();
+    } else if(action === 'confirmEta'){
+      if(!requireUser()) return;
+      const dateVal = $('etaInput-' + id).value;
+      etaFormOpenFor = null;
+      delete drafts['etaInput-'+id];
+      await updateRequestDoc(id, {
+        status: STATUS.ATTENTE,
+        deliveryEta: dateVal ? new Date(dateVal).toISOString() : ''
+      });
+      toast('Délai enregistré');
+    }
+  });
+
+  $('toggleManageBtn').addEventListener('click', ()=>{
+    $('managePanel').classList.toggle('hidden');
+  });
+
+  $('toggleSearchBtnTop').addEventListener('click', ()=>{
+    $('searchPanel').classList.toggle('hidden');
+    renderSearchResults();
+  });
+
+  $('searchSiteInput').addEventListener('change', renderSearchResults);
+  $('searchSupplierInput').addEventListener('input', renderSearchResults);
+  $('exportCsvBtn').addEventListener('click', exportSearchToCsv);
+
+  $('addSiteBtn').addEventListener('click', async ()=>{
+    const name = $('newSiteInput').value.trim();
+    if(!name) return;
+    if(sites.includes(name)){ toast('Ce chantier est déjà dans la liste'); return; }
+    await addSiteName(name);
+    $('newSiteInput').value='';
+    toast('Chantier ajouté');
+  });
+
+  $('sitesList').addEventListener('click', async (e)=>{
+    const btn = e.target.closest('button[data-action="removeSite"]');
+    if(!btn) return;
+    await removeSiteName(btn.dataset.name);
+  });
+
+  $('addNameBtn').addEventListener('click', async ()=>{
+    const name = $('newNameInput').value.trim();
+    if(!name) return;
+    if(staff.includes(name)){ toast('Ce nom est déjà dans la liste'); return; }
+    await addStaffName(name);
+    $('newNameInput').value='';
+    toast('Collègue ajouté');
+  });
+
+  $('teamList').addEventListener('click', async (e)=>{
+    const btn = e.target.closest('button[data-action="removeStaff"]');
+    if(!btn) return;
+    await removeStaffName(btn.dataset.name);
+  });
+
+  // --- Stock & commandes clients ---
+
+  $('toggleStockBtn').addEventListener('click', ()=>{
+    $('stockPanel').classList.toggle('hidden');
+  });
+
+  document.querySelectorAll('#stockPanel .stock-domain-tab').forEach(tab => {
+    tab.addEventListener('click', ()=>{
+      stockActiveDomain = tab.dataset.domain;
+      document.querySelectorAll('#stockPanel .stock-domain-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderStockList();
+      renderNewStockForm();
+    });
+  });
+
+  document.querySelectorAll('#needsPanel .needs-domain-tab').forEach(tab => {
+    tab.addEventListener('click', ()=>{
+      needsActiveDomain = tab.dataset.ndomain;
+      document.querySelectorAll('#needsPanel .needs-domain-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderNeedsPanel();
+    });
+  });
+
+  $('needsSearchInput').addEventListener('input', (e)=>{ needsSearchTerm = e.target.value; renderNeedsPanel(); });
+  $('needsFilterSelect').addEventListener('change', (e)=>{ needsFilter = e.target.value; renderNeedsPanel(); });
+
+  $('stockSearchInput').addEventListener('input', (e)=>{
+    stockSearchTerm = e.target.value;
+    renderStockList();
+  });
+  $('toggleOrdersBtn').addEventListener('click', ()=>{
+    $('ordersPanel').classList.toggle('hidden');
+  });
+  $('toggleNeedsBtn').addEventListener('click', ()=>{
+    $('needsPanel').classList.toggle('hidden');
+    renderNeedsPanel();
+  });
+
+  async function applyLinkedContrePenture(item, delta, type){
+    const linked = findLinkedContrePenture(item);
+    if(!linked) return;
+    await updateDoc(doc(db,'stock_items', linked.id), { stock: increment(delta) });
+    await addDoc(stockMovementsCol, { itemId: linked.id, itemName: linked.name, type, qty: Math.abs(delta), note: 'Lié à ' + item.name, by: currentUser, at: new Date().toISOString() });
+  }
+
+  $('stockList').addEventListener('click', async (e)=>{
+    const btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+    const id = btn.dataset.id;
+    const item = stockItems.find(i => i.id === id);
+    if(!item) return;
+    if(btn.dataset.action === 'stockPlus'){
+      if(!requireUser()) return;
+      const isLame = (CATEGORY_DOMAIN[item.category] || 'quincaillerie') === 'lames';
+      const delta = isLame ? (Math.round(item.stock) + 1 - item.stock) : 1;
+      await updateDoc(doc(db,'stock_items', id), { stock: increment(delta) });
+      await addDoc(stockMovementsCol, { itemId:id, itemName:item.name, type:'entree', qty:1, by: currentUser, at: new Date().toISOString() });
+      await applyLinkedContrePenture(item, 1, 'entree');
+    } else if(btn.dataset.action === 'stockMinus'){
+      if(!requireUser()) return;
+      const isLame = (CATEGORY_DOMAIN[item.category] || 'quincaillerie') === 'lames';
+      const delta = isLame ? (Math.round(item.stock) - 1 - item.stock) : -1;
+      await updateDoc(doc(db,'stock_items', id), { stock: increment(delta) });
+      await addDoc(stockMovementsCol, { itemId:id, itemName:item.name, type:'sortie', qty:1, by: currentUser, at: new Date().toISOString() });
+      await applyLinkedContrePenture(item, -1, 'sortie');
+    } else if(btn.dataset.action === 'stockDelete'){
+      const stockInfo = item.stock !== 0 ? `\n\nSon stock (${item.stock}) est conservé avec la référence archivée.` : '';
+      if(confirm(`Archiver la référence "${item.name}" ?\nElle n'apparaîtra plus dans le stock ni dans les commandes, et pourra être restaurée depuis "Afficher les références archivées".${stockInfo}`)){
+        await updateDoc(doc(db,'stock_items', id), { archived: true });
+        toast('Référence archivée');
+      }
+    }
+  });
+
+  $('stockList').addEventListener('change', async (e)=>{
+    const seuilInput = e.target.closest('input[data-action="stockSetSeuil"]');
+    if(seuilInput){
+      const id = seuilInput.dataset.id;
+      const val = parseFloat(seuilInput.value);
+      await updateDoc(doc(db,'stock_items', id), { seuil: isNaN(val) ? 0 : val });
+      return;
+    }
+    const input = e.target.closest('input[data-action="stockSetValue"]');
+    if(!input) return;
+    if(!requireUser()){ renderStockList(); return; }
+    const id = input.dataset.id;
+    const item = stockItems.find(i => i.id === id);
+    if(!item) return;
+    const newValue = Math.round(parseFloat(input.value));
+    if(isNaN(newValue)){ input.value = item.stock; return; }
+    const delta = newValue - item.stock;
+    if(delta === 0) return;
+    await updateDoc(doc(db,'stock_items', id), { stock: increment(delta) });
+    await addDoc(stockMovementsCol, {
+      itemId:id, itemName:item.name, type: delta > 0 ? 'entree' : 'sortie', qty: Math.abs(delta),
+      note: 'Saisie directe', by: currentUser, at: new Date().toISOString()
+    });
+    await applyLinkedContrePenture(item, delta, delta > 0 ? 'entree' : 'sortie');
+  });
+
+  // Le formulaire d'ajout suit l'onglet actif : une référence ajoutée depuis "Quincaillerie blanche"
+  // reçoit le suffixe (Blanc), depuis "Quincaillerie noire" le suffixe (Noir).
+  function activeQuincColor(){
+    return stockActiveDomain === 'quinc_blanc' ? 'Blanc' : (stockActiveDomain === 'quinc_noir' ? 'Noir' : '');
+  }
+
+  function stripColorSuffix(name){
+    return String(name).trim().replace(/\s*\((Noir|Blanc)\)\s*$/i, '').trim();
+  }
+
+  function renderNewStockForm(){
+    const sel = $('newStockCategoryInput');
+    const current = sel.value;
+    const domainGroup = stockActiveDomain === 'lames' ? 'lames' : 'quincaillerie';
+    const cats = Object.keys(CATEGORY_LABELS).filter(c => CATEGORY_DOMAIN[c] === domainGroup);
+    sel.innerHTML = cats.map(c => `<option value="${c}">${CATEGORY_LABELS[c]}</option>`).join('');
+    if(cats.includes(current)) sel.value = current;
+    const couleur = activeQuincColor();
+    $('newStockHint').textContent = couleur
+      ? `La référence sera ajoutée en quincaillerie ${couleur === 'Blanc' ? 'blanche' : 'noire'} (suffixe "(${couleur})" ajouté automatiquement).`
+      : 'La référence sera ajoutée au stock de lames.';
+  }
+
+  $('addStockItemBtn').addEventListener('click', async ()=>{
+    let name = $('newStockNameInput').value.trim().replace(/\s+/g,' ');
+    if(!name) return;
+    const category = $('newStockCategoryInput').value;
+    const couleur = activeQuincColor();
+    if(couleur){ name = withColor(stripColorSuffix(name), couleur); }
+    const archived = stockItems.find(it => it.archived && normName(it.name) === normName(name));
+    if(archived){
+      if(confirm(`"${archived.name}" existe déjà parmi les références archivées (stock : ${archived.stock}). La restaurer ?`)){
+        await updateDoc(doc(db,'stock_items', archived.id), { archived: false, category });
+        $('newStockNameInput').value = '';
+        toast('Référence restaurée');
+      }
+      return;
+    }
+    if(findStockItemByName(name)){ toast('Cette référence existe déjà'); return; }
+    await addDoc(stockItemsCol, { name, category, stock: 0, seuil: 0 });
+    $('newStockNameInput').value = '';
+    toast('Référence ajoutée : ' + name);
+  });
+
+  // --- Références archivées ---
+  let showArchived = false;
+  function renderArchivedList(){
+    const btn = $('toggleArchivedBtn');
+    const list = stockItems.filter(it => it.archived).sort((a,b)=> a.name.localeCompare(b.name));
+    btn.textContent = showArchived ? 'Masquer les références archivées' : `Afficher les références archivées (${list.length})`;
+    btn.classList.toggle('hidden', !list.length && !showArchived);
+    const box = $('archivedList');
+    box.classList.toggle('hidden', !showArchived);
+    if(!showArchived) return;
+    box.innerHTML = list.length ? list.map(it => `
+      <div class="stock-row archived-row">
+        <span class="stock-row-name">${escapeHtml(it.name)}</span>
+        <div class="stock-row-controls">
+          <span style="font-size:12.5px; color:var(--ink-soft);">Stock conservé : <strong>${it.stock}</strong></span>
+          <button class="btn-ghost" data-action="restoreItem" data-id="${it.id}" style="padding:5px 10px; font-size:12px; margin-left:auto;">Restaurer</button>
+          <button class="btn-ghost" data-action="purgeItem" data-id="${it.id}" style="padding:5px 10px; font-size:12px; color:var(--attente);">Supprimer définitivement</button>
+        </div>
+      </div>`).join('') : '<p style="color:var(--ink-soft); font-size:13px;">Aucune référence archivée.</p>';
+  }
+  $('toggleArchivedBtn').addEventListener('click', ()=>{ showArchived = !showArchived; renderArchivedList(); });
+  $('archivedList').addEventListener('click', async (e)=>{
+    const btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+    const item = stockItems.find(i => i.id === btn.dataset.id);
+    if(!item) return;
+    if(btn.dataset.action === 'restoreItem'){
+      if(findStockItemByName(item.name)){ toast('Une référence active porte déjà ce nom'); return; }
+      await updateDoc(doc(db,'stock_items', item.id), { archived: false });
+      toast('Référence restaurée');
+    } else if(btn.dataset.action === 'purgeItem'){
+      const warn = item.stock !== 0 ? `\n\nATTENTION : son stock (${item.stock}) sera définitivement perdu.` : '';
+      if(confirm(`Supprimer définitivement "${item.name}" ?${warn}`)){
+        await deleteDoc(doc(db,'stock_items', item.id));
+        toast('Référence supprimée');
+      }
+    }
+  });
+
+  $('cleanupUncoloredBtn').addEventListener('click', async ()=>{
+    const toRemove = stockItems.filter(it => {
+      const domain = CATEGORY_DOMAIN[it.category] || 'quincaillerie';
+      return domain === 'quincaillerie' && !it.name.endsWith('(Noir)') && !it.name.endsWith('(Blanc)');
+    });
+    if(!toRemove.length){ toast('Aucune ancienne référence à nettoyer'); return; }
+    const withStock = toRemove.filter(it => it.stock !== 0);
+    let msg = `Supprimer ${toRemove.length} ancienne(s) référence(s) quincaillerie sans couleur ?`;
+    if(withStock.length){
+      msg += `\n\nAttention : ${withStock.length} d'entre elles ont un stock non nul (ex. "${withStock[0].name}" = ${withStock[0].stock}). Ce stock sera perdu — vérifiez avant de confirmer.`;
+    }
+    if(!confirm(msg)) return;
+    for(const it of toRemove){
+      await deleteDoc(doc(db, 'stock_items', it.id));
+    }
+    toast(`${toRemove.length} référence(s) supprimée(s)`);
+  });
+
+  $('importFicheBtn').addEventListener('click', ()=>{
+    if(!requireUser()) return;
+    $('ficheFileInput').click();
+  });
+  $('ficheFileInput').addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(file) handleFicheFile(file);
+    e.target.value = '';
+  });
+
+  $('manualOrderBtn').addEventListener('click', ()=>{
+    if(!requireUser()) return;
+    openOrderForm(null);
+  });
+
+  $('cancelOrderFormBtn').addEventListener('click', ()=>{
+    $('orderFormPanel').classList.add('hidden');
+  });
+
+  $('submitOrderFormBtn').addEventListener('click', async ()=>{
+    if(!requireUser()) return;
+    const client = $('orderClientInput').value.trim();
+    const ref = $('orderRefInput').value.trim();
+    if(!client && !ref){ toast('Indiquez au moins le client ou la référence'); return; }
+    if(hasQuincaillerieValues() && !$('orderQuincaillerieCouleurInput').value){
+      toast('Sélectionnez la couleur (Blanc/Noir) de la quincaillerie');
+      $('orderQuincaillerieCouleurInput').classList.add('attention');
+      setTimeout(()=> $('orderQuincaillerieCouleurInput').classList.remove('attention'), 1600);
+      return;
+    }
+    const items = collectOrderItemsFromEditor();
+    await addDoc(clientOrdersCol, {
+      client, ref, semaine: $('orderSemaineInput').value.trim(), couleur: $('orderCouleurInput').value.trim(),
+      couleurQuincaillerie: $('orderQuincaillerieCouleurInput').value,
+      items, status: 'enregistree',
+      createdBy: currentUser, createdAt: new Date().toISOString()
+    });
+    $('orderFormPanel').classList.add('hidden');
+    $('ordersPanel').classList.remove('hidden');
+    toast('Commande enregistrée');
+  });
+
+  $('ordersList').addEventListener('click', async (e)=>{
+    const btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+    const id = btn.dataset.id;
+    const order = clientOrders.find(o => o.id === id);
+    if(!order) return;
+    if(btn.dataset.action === 'manufactureOrder'){
+      if(!requireUser()) return;
+      if(!confirm('Marquer cette commande comme fabriquée ? Le stock sera déduit en conséquence.')) return;
+      for(const it of (order.items||[])){
+        if(it.tracked === false) continue;
+        const stockItem = findStockItemByName(it.name);
+        if(stockItem){
+          const domain = CATEGORY_DOMAIN[stockItem.category] || 'quincaillerie';
+          const qty = domain === 'lames' ? Math.ceil(it.qty) : it.qty;
+          await updateDoc(doc(db,'stock_items', stockItem.id), { stock: increment(-qty) });
+          await addDoc(stockMovementsCol, { itemId: stockItem.id, itemName: stockItem.name, type:'sortie', qty, orderId:id, by: currentUser, at: new Date().toISOString() });
+        }
+      }
+      await updateDoc(doc(db,'client_orders', id), { status:'fabriquee', manufacturedBy: currentUser, manufacturedAt: new Date().toISOString() });
+      toast('Commande marquée comme fabriquée');
+    } else if(btn.dataset.action === 'deleteOrder'){
+      if(confirm(`Supprimer la commande "${order.client} — ${order.ref}" ?`)){
+        await deleteDoc(doc(db,'client_orders', id));
+        toast('Commande supprimée');
+      }
+    }
+  });
+
+  $('migrationBanner').addEventListener('click', (e)=>{
+    if(!e.target.closest('#openMigrationBtn')) return;
+    renderMigrationPanel();
+    $('migrationPanel').classList.remove('hidden');
+    $('migrationPanel').scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+  $('migrationContent').addEventListener('change', renderMigrationNewList);
+  $('cancelMigrationBtn').addEventListener('click', ()=> $('migrationPanel').classList.add('hidden'));
+  $('applyMigrationBtn').addEventListener('click', applyMigration);
+  $('exportStockCsvBtn').addEventListener('click', exportStockCsv);
+
+  function renderTigeSettings(){
+    $('tigeLongueurInput').value = tigeSettings.longueur;
+    $('tigeChuteInput').value = tigeSettings.chute;
+    $('tigeTraitInput').value = tigeSettings.trait;
+  }
+  $('saveTigeSettingsBtn').addEventListener('click', async ()=>{
+    if(!requireUser()) return;
+    const longueur = parseFloat($('tigeLongueurInput').value);
+    const chute = parseFloat($('tigeChuteInput').value);
+    const trait = parseFloat($('tigeTraitInput').value);
+    if(!(longueur > 0) || !(chute >= 0) || !(trait >= 0) || chute >= longueur){ toast('Valeurs de débit invalides'); return; }
+    try{
+      await setDoc(tigeSettingsRef, { longueur, chute, trait, by: currentUser, at: new Date().toISOString() }, { merge:true });
+      toast('Réglages du débit enregistrés');
+    }catch(e){ console.error(e); toast("Erreur lors de l'enregistrement des réglages"); }
+  });
+
+  renderTigeSettings();
+  renderNewStockForm();
+  initListeners();
+})();
+</script>
+</body>
+</html>
